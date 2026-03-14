@@ -5,25 +5,11 @@ from pathlib import Path
 from app.core.config import IndexerSettings
 from app.ingestion.crawler import VisitorProgramCrawler
 from app.ingestion.crawler import build_study_permit_sources
+from app.jobs.logging_utils import reset_log_file
+from app.jobs.logging_utils import write_log_message
 from app.vectorstore.index_manager import VisitorProgramIndexer
 
 LOG_PATH = Path("/workspace/services/indexer/log/study_permit_indexer_run.log")
-
-
-def log(message: str) -> None:
-    """Write a progress message to stdout and the shared study-permit log.
-
-    Args:
-        message: Progress message to record.
-
-    Returns:
-        None.
-    """
-
-    print(message, flush=True)
-    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_PATH.open("a", encoding="utf-8") as log_file:
-        log_file.write(f"{message}\n")
 
 
 def main() -> None:
@@ -35,20 +21,18 @@ def main() -> None:
     Returns:
         None.
     """
-
-    if LOG_PATH.exists():
-        LOG_PATH.unlink()
+    reset_log_file(LOG_PATH)
 
     settings = IndexerSettings.from_env()
-    log("loaded_settings")
+    write_log_message("loaded_settings", LOG_PATH)
     crawler = VisitorProgramCrawler(sources=build_study_permit_sources())
-    log("study_permit_crawler_initialized")
+    write_log_message("study_permit_crawler_initialized", LOG_PATH)
     indexer = VisitorProgramIndexer(settings, crawler=crawler)
-    log("study_permit_indexer_initialized")
+    write_log_message("study_permit_indexer_initialized", LOG_PATH)
     summary = indexer.index_all_sources().to_dict()
 
-    log("=== STUDY PERMIT INDEXING SUMMARY ===")
-    log(str(summary))
+    write_log_message("=== STUDY PERMIT INDEXING SUMMARY ===", LOG_PATH)
+    write_log_message(str(summary), LOG_PATH)
 
 
 if __name__ == "__main__":

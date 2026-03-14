@@ -51,7 +51,6 @@ def test_review_endpoint_returns_structured_response() -> None:
         },
     )
 
-    print("=== AGENTIC RAG REVIEW ===")
     print(response.json())
 
     assert response.status_code == 200
@@ -124,7 +123,6 @@ def test_review_endpoint_reports_specific_file_errors() -> None:
         },
     )
 
-    print("=== AGENTIC RAG SPECIFIC ERROR REVIEW ===")
     print(response.json())
 
     assert response.status_code == 200

@@ -52,6 +52,43 @@ class IndexingSummary:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class SingleSourceIndexingResult:
+    """Summary of one direct indexing request for a single source.
+
+    Args:
+        source_reference: URL or local file path submitted for indexing.
+        source_kind: Logical source kind routed through the indexer.
+        index_name: Pinecone index name targeted by the request.
+        status: Final workflow status such as `indexed` or `skipped`.
+        modified_date: Extracted page modification date when available.
+        records_upserted: Number of vector records written for the source.
+        logs: Ordered progress lines collected during the request.
+
+    Returns:
+        SingleSourceIndexingResult: Immutable direct-indexing result payload.
+    """
+
+    source_reference: str
+    source_kind: str
+    index_name: str
+    status: str
+    modified_date: str | None
+    records_upserted: int
+    logs: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the result to a serializable dictionary.
+
+        Args:
+            None.
+
+        Returns:
+            dict[str, Any]: Plain dictionary representation of the result.
+        """
+        return asdict(self)
+
+
 class VisitorProgramIndexer:
     """End-to-end indexer for the visitor-program seed sources.
 
@@ -194,6 +231,142 @@ class VisitorProgramIndexer:
             document_checklist_upserts=len(
                 records_by_index["document_checklist_pdf"]
             ),
+        )
+
+    def index_single_source(
+        self,
+        source: CrawlerSource,
+    ) -> SingleSourceIndexingResult:
+        """Index one source and return a structured log-rich result.
+
+        This method supports the indexer UI workflow where an operator submits
+        a single source URL or local PDF path. Operational-guidelines pages are
+        checked against the Redis freshness cache before any crawl, embedding,
+        or Pinecone upsert occurs. Local checklist PDFs bypass the cache and
+        are always read through the repository PDF extraction pipeline.
+
+        Args:
+            source: Source definition describing the requested indexing target.
+
+        Returns:
+            SingleSourceIndexingResult: Structured outcome including progress
+            logs, cache status, extracted modification date, and upsert count.
+        """
+
+        logs: list[str] = []
+        self._append_log(
+            logs,
+            (
+                "single_source_index_start "
+                f"kind={source.kind} source_reference={source.source_reference()}"
+            ),
+        )
+
+        if source.kind == "operational_guidelines":
+            modified_date = self.crawler.fetch_source_modified_date(source)
+            if modified_date:
+                freshness_result = self.policy_cache.compare_modified_date(
+                    source.url,
+                    modified_date,
+                )
+                self._append_log(
+                    logs,
+                    (
+                        "policy_freshness_check "
+                        f"url={source.url} modified_date={modified_date} "
+                        f"cached_modified_date={freshness_result.cached_modified_date} "
+                        f"has_changed={freshness_result.has_changed}"
+                    ),
+                )
+                if not freshness_result.has_changed:
+                    self._append_log(
+                        logs,
+                        f"policy_source_skipped url={source.url} modified_date={modified_date}",
+                    )
+                    return SingleSourceIndexingResult(
+                        source_reference=source.source_reference(),
+                        source_kind=source.kind,
+                        index_name=self.settings.pinecone_operational_guidelines_index_name,
+                        status="skipped_up_to_date",
+                        modified_date=modified_date,
+                        records_upserted=0,
+                        logs=logs,
+                    )
+            else:
+                self._append_log(
+                    logs,
+                    f"policy_freshness_check url={source.url} modified_date=None",
+                )
+
+            document = self.crawler.crawl_source(source)
+            if modified_date and document.modified_date is None:
+                document = CrawledDocument(
+                    source=document.source,
+                    document_title=document.document_title,
+                    sections=document.sections,
+                    full_text=document.full_text,
+                    modified_date=modified_date,
+                )
+            self._append_log(
+                logs,
+                (
+                    "build_records_start "
+                    f"kind={document.source.kind} title={document.document_title}"
+                ),
+            )
+            records = self._build_records_for_document(document)
+            self._append_log(
+                logs,
+                f"build_records_done kind={document.source.kind} records={len(records)}",
+            )
+            self.pinecone_client.ensure_required_indexes_exist()
+            self._append_log(logs, "ensure_indexes_done")
+            if records:
+                self.pinecone_client.upsert_operational_guidelines(records)
+                self._append_log(
+                    logs,
+                    f"upsert_guidelines_done count={len(records)}",
+                )
+            if document.modified_date:
+                self.policy_cache.store_modified_date(source.url, document.modified_date)
+                self._append_log(
+                    logs,
+                    (
+                        "policy_cache_store_done "
+                        f"url={source.url} modified_date={document.modified_date}"
+                    ),
+                )
+            return SingleSourceIndexingResult(
+                source_reference=source.source_reference(),
+                source_kind=source.kind,
+                index_name=self.settings.pinecone_operational_guidelines_index_name,
+                status="indexed",
+                modified_date=document.modified_date,
+                records_upserted=len(records),
+                logs=logs,
+            )
+
+        records = self._build_records_for_document_checklist_pdf(source)
+        self._append_log(
+            logs,
+            f"build_records_done kind={source.kind} records={len(records)}",
+        )
+        self.pinecone_client.ensure_required_indexes_exist()
+        self._append_log(logs, "ensure_indexes_done")
+        if records:
+            self.pinecone_client.upsert_document_checklists(records)
+            self._append_log(
+                logs,
+                f"upsert_checklists_done count={len(records)}",
+            )
+        return SingleSourceIndexingResult(
+            source_reference=source.source_reference(),
+            source_kind=source.kind,
+            index_name=self.settings.pinecone_document_checklist_index_name,
+            status="indexed",
+            modified_date=None,
+            records_upserted=len(records),
+            logs=logs,
         )
 
     def _build_records_for_document(
@@ -383,6 +556,19 @@ class VisitorProgramIndexer:
             if source.kind == "document_checklist_pdf":
                 return source
         return None
+
+    def _append_log(self, logs: list[str], message: str) -> None:
+        """Record one progress line for both stdout and response payloads.
+
+        Args:
+            logs: Mutable list collecting ordered progress messages.
+            message: Human-readable progress message.
+
+        Returns:
+            None.
+        """
+        logs.append(message)
+        print(message, flush=True)
 
     def _chunk_section(
         self,

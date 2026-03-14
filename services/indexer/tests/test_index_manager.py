@@ -439,6 +439,120 @@ def test_study_permit_indexer_uses_operational_guidelines_and_checklist_pdf(
     )
 
 
+def test_index_single_source_skips_unchanged_guideline_page(monkeypatch) -> None:
+    """Verify direct indexing skips unchanged operational-guidelines pages.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+
+    Returns:
+        None.
+    """
+
+    fake_pinecone = FakePineconeClient()
+    fake_policy_cache = FakePolicyCache(
+        has_changed_by_url={"https://example.com/guidelines": False}
+    )
+    settings = _build_settings()
+
+    monkeypatch.setattr(
+        "app.vectorstore.index_manager.embed_texts",
+        lambda texts: [[float(index + 1), float(len(text))] for index, text in enumerate(texts)],
+    )
+
+    indexer = VisitorProgramIndexer(
+        settings,
+        crawler=FakeCrawler(),
+        pinecone_client=fake_pinecone,
+        chunker=TextChunker(ChunkingConfig(chunk_size=80, chunk_overlap=10)),
+        policy_cache=fake_policy_cache,
+    )
+
+    result = indexer.index_single_source(
+        CrawlerSource(
+            kind="operational_guidelines",
+            title="Guidelines",
+            url="https://example.com/guidelines",
+        )
+    )
+
+    print("\n=== SINGLE SOURCE SKIP RESULT ===")
+    print(result.to_dict())
+
+    assert result.status == "skipped_up_to_date"
+    assert result.records_upserted == 0
+    assert len(fake_pinecone.guideline_records) == 0
+    assert any("policy_source_skipped" in line for line in result.logs)
+
+
+def test_index_single_source_indexes_local_pdf(monkeypatch) -> None:
+    """Verify direct indexing reads a local PDF and upserts checklist vectors.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+
+    Returns:
+        None.
+    """
+
+    fake_pinecone = FakePineconeClient()
+    fake_policy_cache = FakePolicyCache()
+    settings = _build_settings()
+
+    monkeypatch.setattr(
+        "app.vectorstore.index_manager.embed_texts",
+        lambda texts: [[float(index + 1), float(len(text))] for index, text in enumerate(texts)],
+    )
+    monkeypatch.setattr(
+        "app.vectorstore.index_manager.extract_pdf_to_text_chunks",
+        lambda pdf_bytes, **kwargs: ExtractedPdf(
+            full_text="Checklist content.",
+            chunks=[
+                TextChunk(
+                    chunk_id="p1-page_text-1",
+                    page_number=1,
+                    source_type="page_text",
+                    text="Checklist content.",
+                    char_count=18,
+                    metadata={"page_number": 1, "method": "pymupdf_text"},
+                )
+            ],
+            pages=[
+                {
+                    "page_number": 1,
+                    "text": "Checklist content.",
+                    "entries": [],
+                }
+            ],
+        ),
+    )
+
+    indexer = VisitorProgramIndexer(
+        settings,
+        crawler=FakeCrawler(),
+        pinecone_client=fake_pinecone,
+        chunker=TextChunker(ChunkingConfig(chunk_size=80, chunk_overlap=10)),
+        policy_cache=fake_policy_cache,
+    )
+
+    result = indexer.index_single_source(
+        CrawlerSource(
+            kind="document_checklist_pdf",
+            title="Checklist PDF",
+            url="",
+            file_path="/workspace/services/data/forms/imm5484e.pdf",
+        )
+    )
+
+    print("\n=== SINGLE SOURCE PDF RESULT ===")
+    print(result.to_dict())
+
+    assert result.status == "indexed"
+    assert result.records_upserted == 1
+    assert len(fake_pinecone.checklist_records) == 1
+    assert any("upsert_checklists_done count=1" in line for line in result.logs)
+
+
 def _build_settings() -> IndexerSettings:
     """Construct stable settings for index-manager tests.
 

@@ -5,6 +5,29 @@ from pathlib import Path
 from typing import Iterable
 
 
+def compute_overall_result(response_payload: dict) -> str:
+    """Derive a single overall completeness result from stage outcomes.
+
+    Args:
+        response_payload: JSON response payload returned by the API review
+            endpoint.
+
+    Returns:
+        str: Overall result label, either `PASS`, `FAIL`, or `MANUAL REVIEW`.
+    """
+
+    stage_outcomes = response_payload.get("stage_outcomes", [])
+    if not stage_outcomes:
+        return "MANUAL REVIEW"
+
+    statuses = [stage.get("status", "").lower() for stage in stage_outcomes]
+    if all(status == "passed" for status in statuses):
+        return "PASS"
+    if any(status == "failed" for status in statuses):
+        return "FAIL"
+    return "MANUAL REVIEW"
+
+
 def build_review_payload(application_name: str, uploaded_files: list) -> dict:
     """Convert uploaded Streamlit files into the API request payload.
 
@@ -75,6 +98,7 @@ def format_review_response(response_payload: dict) -> str:
 
     lines = [
         f"Application Name: {response_payload.get('application_name', '')}",
+        f"Overall Result: {compute_overall_result(response_payload)}",
         "",
         "Stage Outcomes:",
     ]

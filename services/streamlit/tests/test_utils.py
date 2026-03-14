@@ -5,6 +5,7 @@ from pathlib import Path
 
 from utils import build_review_payload
 from utils import collect_backend_logs
+from utils import compute_overall_result
 from utils import format_review_response
 
 
@@ -137,5 +138,32 @@ def test_format_review_response_renders_stage_and_report() -> None:
     print(formatted_text)
 
     assert "Application Name: visitor visa" in formatted_text
+    assert "Overall Result: PASS" in formatted_text
     assert "- Document Presence: passed" in formatted_text
     assert "Strict completeness report." in formatted_text
+
+
+def test_compute_overall_result_detects_failure() -> None:
+    """Verify the overall-result helper maps failed stages to `FAIL`.
+
+    Args:
+        None.
+
+    Returns:
+        None: Assertions validate the computed overall result.
+    """
+
+    overall_result = compute_overall_result(
+        {
+            "stage_outcomes": [
+                {"stage_name": "Document Presence", "status": "passed"},
+                {"stage_name": "Form Completion", "status": "passed"},
+                {"stage_name": "Content Sufficiency", "status": "failed"},
+            ]
+        }
+    )
+
+    print("=== STREAMLIT OVERALL RESULT ===")
+    print(overall_result)
+
+    assert overall_result == "FAIL"

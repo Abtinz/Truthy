@@ -1,8 +1,21 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, File, Form, UploadFile
+from typing import Literal
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+
+class ProcessFileRequest(BaseModel):
+    data: bytes
+    name: str
+    format: Literal["PDF"]
+
+
+class ProcessRequest(BaseModel):
+    application_name: str
+    files: list[ProcessFileRequest]
 
 
 class ProcessResponse(BaseModel):
@@ -11,20 +24,7 @@ class ProcessResponse(BaseModel):
 
 app = FastAPI(title="Truthy API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 @app.post("/process", response_model=ProcessResponse)
-async def process_application(
-    application_name: str = Form(...),
-    files: list[UploadFile] = File(...),
-) -> ProcessResponse:
-    _ = application_name
-    _ = files
+def process_application(payload: ProcessRequest) -> ProcessResponse:
     return ProcessResponse(report="Process endpoint connected")

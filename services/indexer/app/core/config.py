@@ -21,6 +21,12 @@ class IndexerSettings:
         pinecone_namespace: Optional namespace shared across indexing and
             retrieval calls.
         pinecone_top_k: Default number of matches to request during retrieval.
+        pinecone_dimension: Vector dimension used when creating dense indexes.
+        pinecone_metric: Similarity metric used when creating dense indexes.
+        pinecone_cloud: Serverless cloud provider for Pinecone indexes.
+        pinecone_region: Serverless deployment region for Pinecone indexes.
+        pinecone_deletion_protection: Pinecone deletion protection mode for
+            created indexes.
 
     Returns:
         IndexerSettings: Immutable runtime configuration for the indexer.
@@ -31,6 +37,11 @@ class IndexerSettings:
     pinecone_document_checklist_index_name: str
     pinecone_namespace: str | None = None
     pinecone_top_k: int = 5
+    pinecone_dimension: int = 1536
+    pinecone_metric: str = "cosine"
+    pinecone_cloud: str = "aws"
+    pinecone_region: str = "us-east-1"
+    pinecone_deletion_protection: str = "disabled"
 
     @classmethod
     def from_env(cls) -> "IndexerSettings":
@@ -57,6 +68,14 @@ class IndexerSettings:
         ).strip()
         pinecone_namespace = os.getenv("PINECONE_NAMESPACE", "").strip() or None
         pinecone_top_k_raw = os.getenv("PINECONE_TOP_K", "5").strip()
+        pinecone_dimension_raw = os.getenv("PINECONE_DIMENSION", "1536").strip()
+        pinecone_metric = os.getenv("PINECONE_METRIC", "cosine").strip() or "cosine"
+        pinecone_cloud = os.getenv("PINECONE_CLOUD", "aws").strip() or "aws"
+        pinecone_region = os.getenv("PINECONE_REGION", "us-east-1").strip() or "us-east-1"
+        pinecone_deletion_protection = (
+            os.getenv("PINECONE_DELETION_PROTECTION", "disabled").strip()
+            or "disabled"
+        )
 
         missing_variables = [
             name
@@ -83,4 +102,9 @@ class IndexerSettings:
             pinecone_document_checklist_index_name=checklist_index_name,
             pinecone_namespace=pinecone_namespace,
             pinecone_top_k=int(pinecone_top_k_raw),
+            pinecone_dimension=int(pinecone_dimension_raw),
+            pinecone_metric=pinecone_metric,
+            pinecone_cloud=pinecone_cloud,
+            pinecone_region=pinecone_region,
+            pinecone_deletion_protection=pinecone_deletion_protection,
         )

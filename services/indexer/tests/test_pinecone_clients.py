@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from unittest.mock import patch
 
 from app.core.config import IndexerSettings
@@ -91,6 +92,7 @@ class FakePinecone:
         """
         self.api_key = api_key
         self.indexes: dict[str, FakePineconeIndex] = {}
+        self.created_indexes: list[dict[str, object]] = []
 
     def Index(self, name: str) -> FakePineconeIndex:
         """Return a stable fake index object for the requested name.
@@ -104,6 +106,79 @@ class FakePinecone:
         if name not in self.indexes:
             self.indexes[name] = FakePineconeIndex(name)
         return self.indexes[name]
+
+    def list_indexes(self) -> list[dict[str, str]]:
+        """Return fake index metadata for existing indexes.
+
+        Args:
+            None.
+
+        Returns:
+            list[dict[str, str]]: Existing fake indexes.
+        """
+        return [{"name": name} for name in self.indexes]
+
+    def has_index(self, name: str) -> bool:
+        """Check whether a fake index already exists.
+
+        Args:
+            name: Index name to check.
+
+        Returns:
+            bool: Whether the fake index exists.
+        """
+        return name in self.indexes
+
+    def create_index(
+        self,
+        *,
+        name: str,
+        vector_type: str,
+        dimension: int,
+        metric: str,
+        spec: object,
+        deletion_protection: str,
+    ) -> None:
+        """Record fake index creation and register the created index.
+
+        Args:
+            name: Index name being created.
+            vector_type: Vector type requested by the client.
+            dimension: Dense vector dimension.
+            metric: Similarity metric.
+            spec: Deployment spec object.
+            deletion_protection: Deletion protection mode.
+
+        Returns:
+            None.
+        """
+        self.created_indexes.append(
+            {
+                "name": name,
+                "vector_type": vector_type,
+                "dimension": dimension,
+                "metric": metric,
+                "spec": spec,
+                "deletion_protection": deletion_protection,
+            }
+        )
+        self.Index(name)
+
+
+@dataclass(frozen=True)
+class FakeServerlessSpec:
+    """Minimal stand-in for Pinecone ServerlessSpec in unit tests.
+
+    Args:
+        cloud: Cloud provider name.
+        region: Cloud region name.
+
+    Returns:
+        FakeServerlessSpec: Immutable test deployment spec.
+    """
+
+    cloud: str
+    region: str
 
 
 def test_indexer_settings_from_env_reads_pinecone_values(monkeypatch) -> None:
@@ -120,6 +195,11 @@ def test_indexer_settings_from_env_reads_pinecone_values(monkeypatch) -> None:
     monkeypatch.setenv("PINECONE_DOCUMENT_CHECKLIST_INDEX_NAME", "checklist-index")
     monkeypatch.setenv("PINECONE_NAMESPACE", "truthy-dev")
     monkeypatch.setenv("PINECONE_TOP_K", "7")
+    monkeypatch.setenv("PINECONE_DIMENSION", "1536")
+    monkeypatch.setenv("PINECONE_METRIC", "cosine")
+    monkeypatch.setenv("PINECONE_CLOUD", "aws")
+    monkeypatch.setenv("PINECONE_REGION", "us-east-1")
+    monkeypatch.setenv("PINECONE_DELETION_PROTECTION", "disabled")
 
     settings = IndexerSettings.from_env()
 
@@ -131,6 +211,65 @@ def test_indexer_settings_from_env_reads_pinecone_values(monkeypatch) -> None:
     assert settings.pinecone_document_checklist_index_name == "checklist-index"
     assert settings.pinecone_namespace == "truthy-dev"
     assert settings.pinecone_top_k == 7
+    assert settings.pinecone_dimension == 1536
+    assert settings.pinecone_metric == "cosine"
+    assert settings.pinecone_cloud == "aws"
+    assert settings.pinecone_region == "us-east-1"
+
+
+def test_pinecone_indexer_client_creates_missing_required_indexes() -> None:
+    """Verify missing required indexes are created with env-backed settings.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    settings = _build_settings()
+
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
+        client = PineconeIndexerClient(settings)
+        results = client.ensure_required_indexes_exist()
+        created_indexes = client._pinecone.created_indexes
+
+    print("\n=== INDEX CREATION RESULTS ===")
+    print(results)
+    print(created_indexes)
+
+    assert len(created_indexes) == 2
+    assert results[0]["status"] == "created"
+    assert results[1]["status"] == "created"
+    assert created_indexes[0]["dimension"] == 1536
+    assert created_indexes[0]["metric"] == "cosine"
+
+
+def test_pinecone_indexer_client_skips_existing_indexes() -> None:
+    """Verify existing indexes are not recreated unnecessarily.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    settings = _build_settings()
+
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
+        client = PineconeIndexerClient(settings)
+        client._pinecone.Index("guidelines-index")
+        result = client.ensure_index_exists("guidelines-index")
+
+    print("\n=== EXISTING INDEX RESULT ===")
+    print(result)
+
+    assert result["status"] == "already_exists"
 
 
 def test_pinecone_indexer_client_upserts_into_operational_guidelines_index() -> None:
@@ -144,7 +283,10 @@ def test_pinecone_indexer_client_upserts_into_operational_guidelines_index() -> 
     """
     settings = _build_settings()
 
-    with patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone):
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
         client = PineconeIndexerClient(settings)
         response = client.upsert_operational_guidelines(
             [
@@ -177,7 +319,10 @@ def test_pinecone_indexer_client_upserts_into_document_checklist_index() -> None
     """
     settings = _build_settings()
 
-    with patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone):
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
         client = PineconeIndexerClient(settings)
         response = client.upsert_document_checklists(
             [
@@ -211,7 +356,10 @@ def test_pinecone_retriever_client_queries_guidelines_index() -> None:
     """
     settings = _build_settings()
 
-    with patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone):
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
         retriever = PineconeRetrieverClient(settings)
         matches = retriever.search_operational_guidelines([0.1, 0.2, 0.3])
         fake_index = retriever._indexer_client._pinecone.Index("guidelines-index")
@@ -236,7 +384,10 @@ def test_pinecone_retriever_client_queries_checklist_index() -> None:
     """
     settings = _build_settings()
 
-    with patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone):
+    with (
+        patch("app.vectorstore.pinecone_client.Pinecone", FakePinecone),
+        patch("app.vectorstore.pinecone_client.ServerlessSpec", FakeServerlessSpec),
+    ):
         retriever = PineconeRetrieverClient(settings)
         matches = retriever.search_document_checklists(
             [0.9, 0.8],
@@ -269,4 +420,9 @@ def _build_settings() -> IndexerSettings:
         pinecone_document_checklist_index_name="checklist-index",
         pinecone_namespace="truthy-dev",
         pinecone_top_k=5,
+        pinecone_dimension=1536,
+        pinecone_metric="cosine",
+        pinecone_cloud="aws",
+        pinecone_region="us-east-1",
+        pinecone_deletion_protection="disabled",
     )

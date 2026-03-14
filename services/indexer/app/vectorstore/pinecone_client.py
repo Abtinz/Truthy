@@ -7,8 +7,10 @@ from app.core.config import IndexerSettings
 
 try:
     from pinecone import Pinecone
+    from pinecone import ServerlessSpec
 except ImportError:  # pragma: no cover - exercised indirectly in runtime only.
     Pinecone = None  # type: ignore[assignment]
+    ServerlessSpec = None  # type: ignore[assignment]
 
 
 PineconeIndexKey = Literal["operational_guidelines", "document_checklist"]
@@ -81,9 +83,90 @@ class PineconeIndexerClient:
                 "The Pinecone SDK is not installed. Install the `pinecone` package "
                 "before using PineconeIndexerClient."
             )
+        if ServerlessSpec is None:
+            raise RuntimeError(
+                "The Pinecone ServerlessSpec class is unavailable. Install the "
+                "`pinecone` package before using PineconeIndexerClient."
+            )
 
         self.settings = settings
         self._pinecone = Pinecone(api_key=settings.pinecone_api_key)
+
+    def list_index_names(self) -> list[str]:
+        """List available Pinecone index names for the current account.
+
+        Args:
+            None.
+
+        Returns:
+            list[str]: Sorted list of existing Pinecone index names.
+        """
+        response = self._pinecone.list_indexes()
+
+        if hasattr(response, "names"):
+            return sorted(response.names())  # pragma: no cover - SDK-specific path
+        if isinstance(response, dict) and "indexes" in response:
+            return sorted(index["name"] for index in response["indexes"])
+        return sorted(item["name"] for item in response)
+
+    def ensure_required_indexes_exist(self) -> list[dict[str, Any]]:
+        """Create the two required indexes if they do not already exist.
+
+        Args:
+            None.
+
+        Returns:
+            list[dict[str, Any]]: Per-index result summary describing whether
+            the index already existed or was created.
+        """
+        return [
+            self.ensure_index_exists(
+                self.settings.pinecone_operational_guidelines_index_name
+            ),
+            self.ensure_index_exists(
+                self.settings.pinecone_document_checklist_index_name
+            ),
+        ]
+
+    def ensure_index_exists(self, index_name: str) -> dict[str, Any]:
+        """Create a dense serverless Pinecone index if it is missing.
+
+        Args:
+            index_name: Target Pinecone index name.
+
+        Returns:
+            dict[str, Any]: Summary describing whether the index existed or was
+            created, along with the requested creation settings.
+        """
+        if self._pinecone.has_index(index_name):
+            return {
+                "index_name": index_name,
+                "status": "already_exists",
+                "dimension": self.settings.pinecone_dimension,
+                "metric": self.settings.pinecone_metric,
+                "cloud": self.settings.pinecone_cloud,
+                "region": self.settings.pinecone_region,
+            }
+
+        self._pinecone.create_index(
+            name=index_name,
+            vector_type="dense",
+            dimension=self.settings.pinecone_dimension,
+            metric=self.settings.pinecone_metric,
+            spec=ServerlessSpec(
+                cloud=self.settings.pinecone_cloud,
+                region=self.settings.pinecone_region,
+            ),
+            deletion_protection=self.settings.pinecone_deletion_protection,
+        )
+        return {
+            "index_name": index_name,
+            "status": "created",
+            "dimension": self.settings.pinecone_dimension,
+            "metric": self.settings.pinecone_metric,
+            "cloud": self.settings.pinecone_cloud,
+            "region": self.settings.pinecone_region,
+        }
 
     def upsert_operational_guidelines(
         self,

@@ -10,6 +10,8 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 
+from app.ingestion.pdf_to_text import extract_pdf_to_text_chunks
+
 
 SourceKind = Literal["operational_guidelines", "document_checklist_pdf"]
 
@@ -228,6 +230,11 @@ class VisitorProgramCrawler:
             documents = pdf_loader.load()
 
         sections = self._extract_pdf_sections(documents, source.title)
+        if self._should_use_pdf_fallback(sections):
+            sections = self._extract_pdf_sections_from_fallback_bytes(
+                response.content,
+                source.title,
+            )
         full_text = self._render_sections_to_text(sections)
 
         return CrawledDocument(
@@ -410,6 +417,57 @@ class VisitorProgramCrawler:
                 )
             )
 
+        return sections
+
+    def _should_use_pdf_fallback(self, sections: list[HierarchicalSection]) -> bool:
+        """Determine whether the PDF loader output is just an XFA placeholder.
+
+        Args:
+            sections: Sections extracted by LangChain's PDF loader.
+
+        Returns:
+            bool: Whether the fallback PDF extractor should be used instead.
+        """
+        if not sections:
+            return True
+
+        combined_text = " ".join(section.content for section in sections).lower()
+        return "requires adobe reader" in combined_text
+
+    def _extract_pdf_sections_from_fallback_bytes(
+        self,
+        pdf_bytes: bytes,
+        document_title: str,
+    ) -> list[HierarchicalSection]:
+        """Extract page sections from raw PDF bytes using the local PDF parser.
+
+        Args:
+            pdf_bytes: Raw PDF content.
+            document_title: Top-level title for the PDF.
+
+        Returns:
+            list[HierarchicalSection]: Page-level sections built from the local
+            PDF extraction pipeline.
+        """
+        extracted_pdf = extract_pdf_to_text_chunks(
+            pdf_bytes,
+            chunk_size=2000,
+            chunk_overlap=200,
+            ocr_images=True,
+        )
+
+        sections: list[HierarchicalSection] = []
+        for page in extracted_pdf.pages:
+            page_number = page["page_number"]
+            page_title = f"Page {page_number}"
+            sections.append(
+                HierarchicalSection(
+                    title=page_title,
+                    level=2,
+                    path=[document_title, page_title],
+                    content=page["text"],
+                )
+            )
         return sections
 
     def _render_sections_to_text(self, sections: list[HierarchicalSection]) -> str:

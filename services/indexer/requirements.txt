@@ -2,6 +2,7 @@ beautifulsoup4==4.13.4
 cryptography==45.0.7
 langchain-community==0.3.27
 openai==1.107.1
+pinecone==7.3.0
 pypdf==5.4.0
 Pillow==11.1.0
 PyMuPDF==1.26.4

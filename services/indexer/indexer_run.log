@@ -1,0 +1,18 @@
+loaded_settings
+indexer_initialized
+crawl_all_start
+crawl_all_done documents=3
+build_records_start kind=operational_guidelines title=Temporary residents: Document requirements
+build_records_done kind=operational_guidelines records=8
+build_records_start kind=operational_guidelines title=Temporary resident: Application intake assessment
+build_records_done kind=operational_guidelines records=4
+build_records_start kind=document_checklist_pdf title=Visitor document checklist PDF
+build_records_done kind=document_checklist_pdf records=1
+ensure_indexes_start
+ensure_indexes_done
+upsert_guidelines_start count=12
+upsert_guidelines_done
+upsert_checklists_start count=1
+upsert_checklists_done
+=== INDEXING SUMMARY ===
+{'crawled_documents': 3, 'generated_chunks': 13, 'operational_guidelines_upserts': 12, 'document_checklist_upserts': 1}

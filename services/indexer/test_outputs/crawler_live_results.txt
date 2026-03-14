@@ -1,0 +1,141 @@
+
+
+DOCUMENT 1
+Source URL: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/document-requirements.html
+Source Kind: operational_guidelines
+Document Title: Temporary residents: Document requirements
+Section Count: 6
+
+Section Title: Temporary residents: Document requirements
+Section Level: 1
+Section Path: Temporary residents: Document requirements
+Section Content:
+This page provides guidance for the documents required when submitting an application for a temporary resident visa (TRV), the documents minors require for travel, and exemptions to the document requirements.
+- Form IMM 5484 (PDF, 2.5 MB) provides a checklist for the documents required when submitting an application for a TRV.
+Note: Applicants who are required to provide biometric information will have a digital photograph taken at biometric collection and therefore are not required to submit any other photographs with their application.
+----------------------------------------
+Section Title: On this page
+Section Level: 2
+Section Path: Temporary residents: Document requirements > On this page
+Section Content:
+- Document requirements
+- For minors
+- Super visa
+- Exemption from document requirements
+----------------------------------------
+Section Title: Document requirements
+Section Level: 2
+Section Path: Temporary residents: Document requirements > Document requirements
+Section Content:
+When submitting an application for a TRV, all applicants must complete, sign and date the following Immigration, Refugees and Citizenship Canada (IRCC) forms, unless otherwise noted:
+- Application for Temporary Resident Visa [IMM 5257]
+- Family Information [IMM 5707]
+Note: This form must be completed by those aged 18 years or older only.
+- Statutory Declaration of Common-Law Union [IMM 5409]
+Note: Refer to the responsible visa office for your region.
+- Use of a Representative [IMM 5476]
+Note: Applicants must complete this form only if they use the services of a representative or if they are appointing or cancelling a representative.
+- Authority to Release Personal Information to a Designated Individual [IMM 5475]
+Note: This form is only to be completed by applicants who authorize IRCC and the Canada Border Services Agency (CBSA) to release information from their case file to someone other than the applicant.
+In addition to submitting the forms listed above, applicants must:
+- pay the applicable processing and biometric collection fee
+- submit the necessary supporting documents (such as a valid passport) to accompany their application
+An application package is considered complete when:
+- all questions on the application forms have been answered
+- the fee has been paid
+- the forms have been validated
+----------------------------------------
+Section Title: For minors
+Section Level: 2
+Section Path: Temporary residents: Document requirements > For minors
+Section Content:
+In the federal context and according to the United Nations Convention on the Rights of the Child, a child is a person under the age of 18. Minors travelling alone must carry information concerning the person who will be responsible for them once they arrive in Canada.
+It is recommended that minors travelling without their parents have a letter of authorization signed by both parents or legal guardians, granting permission to travel alone. This letter should be:
+- submitted with their application
+- carried on the minor as they travel
+If the child is the subject of a custody order or is travelling with one parent, custody documents or a letter of authorization from the other, non-accompanying parent providing consent for the trip must be:
+- provided as part of the application
+- carried on the minor when travelling to Canada to present to a border services officer at the port of entry
+These documents will allow a border services officer to facilitate the entry of these travellers.
+Other documents may be required if requested, such as:
+- a letter of invitation or an explanation for the purpose of the trip
+- evidence of ties to the applicant’s home country
+- proof of current immigration status in the country of application
+Note: When minors are travelling with only one parent, or with a relative or a friend, the officer’s primary duty is to ensure that the child is not being abducted from their parent(s) or lawful guardian(s).
+----------------------------------------
+Section Title: Super visa
+Section Level: 2
+Section Path: Temporary residents: Document requirements > Super visa
+Section Content:
+For eligibility criteria and document requirements for the super visa, see Temporary residents: Super visa .
+----------------------------------------
+Section Title: Exemption from document requirements
+Section Level: 2
+Section Path: Temporary residents: Document requirements > Exemption from document requirements
+Section Content:
+According to subsection 52(2) of the Immigration and Refugee Protection Regulations (IRPR), certain foreign nationals are exempt from the requirement to provide their passport or travel or identity document . Foreign nationals who are exempt from the document requirements are still required to provide proof of their status in their country of origin. Documentation to prove status may include:
+- national identity card
+- certificate of citizenship
+- birth certificate
+- alien registration card (green card)
+- armed forces identification and travel orders in accordance with the Visiting Forces Act
+Temporary residents in Canada who submit an application to extend their stay must send photocopies of the following pages of their passport or identity document with their application:
+- identity page
+- page containing the date and place of issuance
+- page showing the expiry date of the document
+- page showing the entry stamp (if applicable)
+----------------------------------------
+
+================================================================================
+
+DOCUMENT 2
+Source URL: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/application-intake-assessment.html
+Source Kind: operational_guidelines
+Document Title: Temporary resident: Application intake assessment
+Section Count: 2
+
+Section Title: Temporary resident: Application intake assessment
+Section Level: 1
+Section Path: Temporary resident: Application intake assessment
+Section Content:
+This section contains policy, procedures and guidance used by IRCC staff. It is posted on the department’s website as a courtesy to stakeholders.
+----------------------------------------
+Section Title: Reviewing documents
+Section Level: 2
+Section Path: Temporary resident: Application intake assessment > Reviewing documents
+Section Content:
+All in-Canada visitor extension, study permit and work permit applications must be submitted electronically, with some exceptions. Consult the list of programs that are exempt from the in-Canada mandatory electronic application requirement .
+Officers should
+- Upon receipt of the application, determine whether the receiving office should be processing the application under R11(2);
+- Check that the application forms have been properly completed and signed by the applicant. All applicants (including children) 18 years and over must complete their own application form. Applicants under 18 must have a guardian or parent sign for them. R10(2)(a) requires that an application contain all of the following for the applicant and all family members of the applicant, whether accompanying or not: name birth date address, nationality immigration status a statement whether the applicant or any of the family members is the spouse, common-law partner or conjugal (R10(2)(a))
+Check that the application forms have been properly completed and signed by the applicant. All applicants (including children) 18 years and over must complete their own application form. Applicants under 18 must have a guardian or parent sign for them.
+R10(2)(a) requires that an application contain all of the following for the applicant and all family members of the applicant, whether accompanying or not:
+- Determine whether the applicant is in need of a temporary resident visa [R190]. Note: If the issuance of a visa will facilitate the travel of a visa-exempt person, officers may issue a visa if they are satisfied that all requirements have been met. (See Facilitation visas .)
+Before returning a passport to a person who does not require a temporary resident visa, ensure that the passport is genuine and does not contain a photo substitution.
+- Determine whether the applicant requires a study or work permit in addition to the temporary resident visa (Refer to Students , and Temporary Foreign Worker Guidelines);
+- Determine whether the appropriate processing fee has been paid;
+- Ensure the application is checked against FOSS/GCMS, existing immigration and visitor file records, and the Enforcement Information Index. If the applicant is a non-resident of the country of application, officers should request a records check from the visa office responsible for the country of citizenship or of habitual residence.
+- Determine whether biometric information is required or has already been provided and whether the biometric fee has been paid.
+- Determine if additional security checks are required.
+See also: Eligibility and admissibility considerations
+----------------------------------------
+
+================================================================================
+
+DOCUMENT 3
+Source URL: https://www.canada.ca/content/dam/ircc/documents/pdf/english/kits/forms/imm5484/08-07-2024/imm5484e.pdf
+Source Kind: document_checklist_pdf
+Document Title: Visitor document checklist PDF
+Section Count: 1
+
+Section Title: Page 1
+Section Level: 2
+Section Path: Visitor document checklist PDF > Page 1
+Section Content:
+The document you are trying to load requires Adobe Reader 8 or higher. You may not have the 
+Adobe Reader installed or your viewing environment may not be properly configured to use 
+Adobe Reader. 
+ 
+For information on how to install Adobe Reader and configure your viewing environment please 
+see http://www.adobe.com/go/pdf_forms_configure.
+----------------------------------------

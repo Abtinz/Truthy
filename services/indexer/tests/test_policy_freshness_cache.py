@@ -25,6 +25,7 @@ class FakeRedisClient:
         """
 
         self.storage: dict[str, str] = {}
+        self.hash_storage: dict[str, dict[str, str]] = {}
 
     def get(self, key: str) -> str | None:
         """Return the cached value for one key.
@@ -50,6 +51,47 @@ class FakeRedisClient:
         """
 
         self.storage[key] = value
+
+    def hget(self, name: str, key: str) -> str | None:
+        """Return one value from a named Redis hash.
+
+        Args:
+            name: Redis hash key.
+            key: Field name inside the Redis hash.
+
+        Returns:
+            str | None: Stored hash value when present.
+        """
+
+        return self.hash_storage.get(name, {}).get(key)
+
+    def hset(self, name: str, key: str, value: str) -> None:
+        """Store one field inside a named Redis hash.
+
+        Args:
+            name: Redis hash key.
+            key: Field name inside the Redis hash.
+            value: Value to store for the field.
+
+        Returns:
+            None.
+        """
+
+        if name not in self.hash_storage:
+            self.hash_storage[name] = {}
+        self.hash_storage[name][key] = value
+
+    def hgetall(self, name: str) -> dict[str, str]:
+        """Return all field/value pairs from a named Redis hash.
+
+        Args:
+            name: Redis hash key.
+
+        Returns:
+            dict[str, str]: Stored hash field/value pairs.
+        """
+
+        return dict(self.hash_storage.get(name, {}))
 
 
 def test_policy_freshness_cache_detects_change_and_reuse() -> None:
@@ -78,6 +120,36 @@ def test_policy_freshness_cache_detects_change_and_reuse() -> None:
     assert first_result.has_changed is True
     assert second_result.has_changed is False
     assert third_result.has_changed is True
+
+
+def test_policy_freshness_cache_lists_saved_entries() -> None:
+    """Verify the cache can expose stored URL/date pairs for inspection.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+
+    cache = PolicyFreshnessCache(_build_settings(), redis_client=FakeRedisClient())
+    cache.store_modified_date("https://example.com/policy-b", "2026-03-04")
+    cache.store_modified_date("https://example.com/policy-a", "2026-03-03")
+
+    entries = cache.list_entries()
+
+    print("\n=== POLICY FRESHNESS CACHE ENTRIES ===")
+    for entry in entries:
+        print(entry)
+
+    assert [entry.source_url for entry in entries] == [
+        "https://example.com/policy-a",
+        "https://example.com/policy-b",
+    ]
+    assert [entry.modified_date for entry in entries] == [
+        "2026-03-03",
+        "2026-03-04",
+    ]
 
 
 def _build_settings() -> IndexerSettings:

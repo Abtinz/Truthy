@@ -58,6 +58,15 @@ The indexer now includes a Redis-backed IRCC freshness cache.
 
 This reduces unnecessary embedding calls and makes policy-refresh runs cheaper when IRCC pages are unchanged.
 
+The cache is also exposed through the indexer service as a lightweight
+inspection endpoint:
+
+- `GET /cache/policy-freshness`
+
+This endpoint returns the tracked IRCC source URLs and their currently cached
+`Date modified` values, which makes the freshness optimization auditable
+without storing any extra policy content in Redis.
+
 The current program coverage includes:
 
 - `visitor`
@@ -92,5 +101,6 @@ docker compose up
 - Streamlit UI: `http://localhost:8501`
 - FastAPI gateway: `http://localhost:8000`
 - Indexer service: `http://localhost:8001`
+- Indexer Redis cache log: `http://localhost:8001/cache/policy-freshness`
 - Agentic RAG service: `http://localhost:8002`
 - Qdrant: `http://localhost:6333`

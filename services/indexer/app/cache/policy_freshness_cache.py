@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
 
 import redis
 
@@ -26,6 +25,26 @@ class PolicyFreshnessResult:
     modified_date: str
     cached_modified_date: str | None
     has_changed: bool
+
+
+@dataclass(frozen=True)
+class PolicyFreshnessCacheEntry:
+    """One cached IRCC freshness record stored in Redis.
+
+    This lightweight record intentionally stores only the minimum metadata
+    needed for operator visibility and refresh optimization: the source URL and
+    the latest observed `Date modified` value from that page.
+
+    Args:
+        source_url: Policy source URL tracked by the freshness cache.
+        modified_date: Last stored `Date modified` value for the source.
+
+    Returns:
+        PolicyFreshnessCacheEntry: Immutable Redis cache entry projection.
+    """
+
+    source_url: str
+    modified_date: str
 
 
 class PolicyFreshnessCache:
@@ -62,6 +81,7 @@ class PolicyFreshnessCache:
             settings.redis_url,
             decode_responses=True,
         )
+        self.registry_key = f"{self.settings.redis_policy_cache_prefix}:entries"
 
     def compare_modified_date(
         self,
@@ -78,7 +98,7 @@ class PolicyFreshnessCache:
             PolicyFreshnessResult: Result showing whether the source changed.
         """
 
-        cached_modified_date = self.redis_client.get(self._build_key(source_url))
+        cached_modified_date = self.redis_client.hget(self.registry_key, source_url)
         return PolicyFreshnessResult(
             source_url=source_url,
             modified_date=modified_date,
@@ -97,17 +117,24 @@ class PolicyFreshnessCache:
             None.
         """
 
-        self.redis_client.set(self._build_key(source_url), modified_date)
+        self.redis_client.hset(self.registry_key, source_url, modified_date)
 
-    def _build_key(self, source_url: str) -> str:
-        """Build the Redis key used for one source URL.
+    def list_entries(self) -> list[PolicyFreshnessCacheEntry]:
+        """Return the currently tracked Redis freshness records.
 
         Args:
-            source_url: Policy source URL.
+            None.
 
         Returns:
-            str: Redis key string for the cached freshness record.
+            list[PolicyFreshnessCacheEntry]: Sorted cache entries for operator
+            inspection and debugging.
         """
 
-        digest = sha256(source_url.encode("utf-8")).hexdigest()
-        return f"{self.settings.redis_policy_cache_prefix}:{digest}"
+        raw_entries = self.redis_client.hgetall(self.registry_key)
+        return [
+            PolicyFreshnessCacheEntry(
+                source_url=source_url,
+                modified_date=modified_date,
+            )
+            for source_url, modified_date in sorted(raw_entries.items())
+        ]

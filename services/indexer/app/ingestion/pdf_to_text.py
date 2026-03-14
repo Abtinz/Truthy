@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import io
-import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
 import fitz
 import pytesseract
 from PIL import Image, ImageOps
+
+from app.chunking.text_chunker import (
+    ChunkingConfig,
+    TextChunker,
+    normalize_text,
+)
 
 
 @dataclass(frozen=True)
@@ -117,12 +122,13 @@ def extract_pdf_to_text_chunks(
     """
     if not pdf_bytes:
         raise ValueError("pdf_bytes must not be empty")
-    if chunk_size <= 0:
-        raise ValueError("chunk_size must be greater than zero")
-    if chunk_overlap < 0:
-        raise ValueError("chunk_overlap must not be negative")
-    if chunk_overlap >= chunk_size:
-        raise ValueError("chunk_overlap must be smaller than chunk_size")
+
+    chunker = TextChunker(
+        ChunkingConfig(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+    )
 
     document = fitz.open(stream=pdf_bytes, filetype="pdf")
     page_summaries: list[dict[str, Any]] = []
@@ -148,12 +154,11 @@ def extract_pdf_to_text_chunks(
                 # OCR-derived text.
                 chunks.extend(
                     _chunk_entry(
+                        chunker=chunker,
                         page_number=page_number,
                         source_type=entry["source_type"],
                         text=entry["text"],
                         metadata=entry["metadata"],
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap,
                     )
                 )
     finally:
@@ -180,7 +185,7 @@ def _extract_page_entries(page: fitz.Page, page_number: int, *, ocr_images: bool
     """
     entries: list[dict[str, Any]] = []
 
-    text = _normalize_text(page.get_text("text"))
+    text = normalize_text(page.get_text("text"))
     if text:
         entries.append(
             {
@@ -248,17 +253,16 @@ def _extract_text_from_image_bytes(image_bytes: bytes) -> str:
         grayscale = ImageOps.grayscale(image)
         normalized = ImageOps.autocontrast(grayscale)
         text = pytesseract.image_to_string(normalized, config="--psm 6")
-    return _normalize_text(text)
+    return normalize_text(text)
 
 
 def _chunk_entry(
     *,
+    chunker: TextChunker,
     page_number: int,
     source_type: str,
     text: str,
     metadata: dict[str, Any],
-    chunk_size: int,
-    chunk_overlap: int,
 ) -> list[TextChunk]:
     """Split one extracted text entry into retrieval-friendly chunks.
 
@@ -271,166 +275,26 @@ def _chunk_entry(
         source_type: Origin of the text such as native text or OCR.
         text: Text to split into chunks.
         metadata: Provenance metadata that should be copied to each chunk.
-        chunk_size: Maximum target size for each chunk.
-        chunk_overlap: Desired overlap between neighboring chunks.
+        chunker: Reusable text chunker instance.
 
     Returns:
         list[TextChunk]: Final chunk objects for the input entry.
     """
-    normalized_text = _normalize_text(text)
-    if not normalized_text:
-        return []
-
-    paragraphs = [part.strip() for part in re.split(r"\n{2,}", normalized_text) if part.strip()]
-    if not paragraphs:
-        paragraphs = [normalized_text]
-
-    raw_chunks: list[str] = []
-    current = ""
-
-    for paragraph in paragraphs:
-        candidate = paragraph if not current else f"{current}\n\n{paragraph}"
-        if len(candidate) <= chunk_size:
-            current = candidate
-            continue
-
-        if current:
-            raw_chunks.append(current)
-            current = paragraph
-        else:
-            raw_chunks.extend(_split_long_text(paragraph, chunk_size=chunk_size, chunk_overlap=chunk_overlap))
-            current = ""
-
-    if current:
-        raw_chunks.append(current)
+    base_chunks = chunker.chunk_text(
+        text,
+        chunk_id_prefix=f"p{page_number}-{source_type}",
+        metadata=metadata,
+    )
 
     finalized = [
         TextChunk(
-            chunk_id=f"p{page_number}-{source_type}-{index}",
+            chunk_id=chunk.chunk_id,
             page_number=page_number,
             source_type=source_type,
-            text=chunk_text,
-            char_count=len(chunk_text),
-            metadata=metadata,
+            text=chunk.text,
+            char_count=chunk.char_count,
+            metadata=chunk.metadata,
         )
-        for index, chunk_text in enumerate(
-            _apply_overlap(raw_chunks, chunk_overlap=chunk_overlap),
-            start=1,
-        )
-        if chunk_text
+        for chunk in base_chunks
     ]
     return finalized
-
-
-def _split_long_text(text: str, *, chunk_size: int, chunk_overlap: int) -> list[str]:
-    """Split oversized text into word-preserving chunks.
-
-    This helper is used when a single paragraph exceeds the configured chunk
-    size. It attempts to keep words intact while still maintaining a small
-    overlap window between consecutive chunks.
-
-    Args:
-        text: Input text that is too large for a single chunk.
-        chunk_size: Maximum chunk size in characters.
-        chunk_overlap: Desired overlap size in characters.
-
-    Returns:
-        list[str]: Chunk strings before final object wrapping.
-    """
-    words = text.split()
-    if not words:
-        return []
-
-    chunks: list[str] = []
-    current_words: list[str] = []
-
-    for word in words:
-        candidate = " ".join(current_words + [word])
-        if len(candidate) <= chunk_size:
-            current_words.append(word)
-            continue
-
-        if current_words:
-            chunks.append(" ".join(current_words))
-            overlap_words = _take_overlap_words(current_words, chunk_overlap)
-            current_words = overlap_words + [word]
-        else:
-            chunks.append(word[:chunk_size])
-            remainder = word[chunk_size - chunk_overlap :] if chunk_overlap else word[chunk_size:]
-            current_words = [remainder] if remainder else []
-
-    if current_words:
-        chunks.append(" ".join(current_words))
-    return chunks
-
-
-def _apply_overlap(chunks: list[str], *, chunk_overlap: int) -> list[str]:
-    """Apply character-based overlap between neighboring chunks.
-
-    The overlap is appended as a prefix from the previous chunk when that prefix
-    is not already present at the beginning of the current chunk.
-
-    Args:
-        chunks: Sequential chunk strings.
-        chunk_overlap: Number of trailing characters to reuse as context.
-
-    Returns:
-        list[str]: Chunk strings with overlap context applied.
-    """
-    if not chunks or chunk_overlap == 0:
-        return chunks
-
-    overlapped: list[str] = []
-    previous = ""
-    for chunk in chunks:
-        if previous:
-            prefix = previous[-chunk_overlap:].strip()
-            if prefix and not chunk.startswith(prefix):
-                chunk = f"{prefix} {chunk}".strip()
-        overlapped.append(chunk)
-        previous = chunk
-    return overlapped
-
-
-def _take_overlap_words(words: list[str], overlap_chars: int) -> list[str]:
-    """Select trailing words that best fit the requested overlap window.
-
-    Args:
-        words: Existing chunk words from which overlap should be taken.
-        overlap_chars: Target overlap size in characters.
-
-    Returns:
-        list[str]: Trailing words that should be repeated in the next chunk.
-    """
-    if overlap_chars == 0:
-        return []
-
-    selected: list[str] = []
-    total = 0
-    for word in reversed(words):
-        projected = len(word) if total == 0 else total + 1 + len(word)
-        if projected > overlap_chars and selected:
-            break
-        selected.insert(0, word)
-        total = projected
-        if total >= overlap_chars:
-            break
-    return selected
-
-
-def _normalize_text(text: str) -> str:
-    """Normalize extracted text for stable downstream processing.
-
-    The normalizer removes null characters, collapses repeated spaces, and
-    reduces excessive blank lines while preserving meaningful line structure.
-
-    Args:
-        text: Raw extracted text from a PDF or OCR pipeline.
-
-    Returns:
-        str: Cleaned text with normalized whitespace.
-    """
-    text = text.replace("\x00", " ")
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()

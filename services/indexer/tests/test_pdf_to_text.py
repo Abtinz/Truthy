@@ -6,13 +6,8 @@ from PIL import Image, ImageDraw, ImageFont
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
-from app.ingestion.pdf_to_text import (
-    _apply_overlap,
-    _normalize_text,
-    _split_long_text,
-    _take_overlap_words,
-    extract_pdf_to_text_chunks,
-)
+from app.chunking.text_chunker import normalize_text
+from app.ingestion.pdf_to_text import extract_pdf_to_text_chunks
 
 
 def test_extract_pdf_to_text_chunks_prints_result_for_simple_pdf() -> None:
@@ -73,49 +68,10 @@ def test_extract_pdf_to_text_chunks_validates_chunk_arguments() -> None:
         raise AssertionError("Expected chunk overlap validation error")
 
 
-def test_split_long_text_prints_chunk_boundaries() -> None:
-    text = (
-        "This is a longer paragraph intended to verify that oversized text is "
-        "split into multiple chunks while preserving readability and overlap."
-    )
-
-    chunks = _split_long_text(text, chunk_size=55, chunk_overlap=12)
-
-    print("\n=== SPLIT LONG TEXT ===")
-    print(chunks)
-
-    assert len(chunks) >= 2
-    assert all(len(chunk) <= 55 for chunk in chunks)
-
-
-def test_apply_overlap_prints_contextualized_chunks() -> None:
-    chunks = ["alpha beta gamma", "delta epsilon", "zeta eta"]
-
-    overlapped = _apply_overlap(chunks, chunk_overlap=6)
-
-    print("\n=== OVERLAPPED CHUNKS ===")
-    print(overlapped)
-
-    assert len(overlapped) == 3
-    assert overlapped[1].startswith(" gamma") or "gamma" in overlapped[1]
-
-
-def test_take_overlap_words_prints_selection() -> None:
-    words = ["minor", "citizenship", "application", "package"]
-
-    selected = _take_overlap_words(words, overlap_chars=18)
-
-    print("\n=== OVERLAP WORDS ===")
-    print(selected)
-
-    assert selected
-    assert "package" in selected
-
-
 def test_normalize_text_prints_normalized_result() -> None:
     raw = "Applicant\x00   Name:\t Jane Doe\n\n\nReference   Number:   TEST-001"
 
-    normalized = _normalize_text(raw)
+    normalized = normalize_text(raw)
 
     print("\n=== NORMALIZED TEXT ===")
     print(normalized)

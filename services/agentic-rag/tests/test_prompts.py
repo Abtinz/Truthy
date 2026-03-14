@@ -18,7 +18,6 @@ def test_system_prompt_contains_main_completeness_rule() -> None:
 
     prompt_bundle = load_prompt_bundle()
 
-    print("=== SYSTEM PROMPT ===")
     print(prompt_bundle.system_prompt)
 
     assert "What is a complete application" in prompt_bundle.system_prompt
@@ -57,11 +56,11 @@ def test_stage_templates_render_with_system_prompt() -> None:
         extracted_evidence=["fee_receipt.pdf: Proof of payment for the applicable fee is missing."],
     )
 
-    print("=== DOCUMENT PROMPT ===")
+    print("DOCUMENT PROMPT:")
     print(document_prompt)
-    print("=== FORM PROMPT ===")
+    print("FORM PROMPT:")
     print(form_prompt)
-    print("=== CONTENT PROMPT ===")
+    print("CONTENT PROMPT:")
     print(content_prompt)
 
     assert "What is a complete application" in document_prompt

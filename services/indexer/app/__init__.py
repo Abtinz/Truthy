@@ -1,1 +1,0 @@
-"""Indexer service package."""

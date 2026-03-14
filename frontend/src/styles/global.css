@@ -73,25 +73,51 @@ input {
   color: rgba(255, 245, 232, 0.88);
 }
 
-.palette-strip {
+.hero-wordmark-card {
   display: grid;
-  grid-template-columns: repeat(4, minmax(48px, 1fr));
-  align-items: end;
-  gap: 16px;
-}
-
-.swatch {
-  height: 112px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-  transform: translateY(24px);
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: rgba(255, 252, 246, 0.96);
+  color: #222;
+  box-shadow: inset 0 0 0 1px rgba(94, 0, 6, 0.08);
   animation: floatIn 900ms ease forwards;
 }
 
-.swatch-deep { background: var(--deep-red); }
-.swatch-crimson { background: var(--crimson); animation-delay: 80ms; }
-.swatch-amber { background: var(--amber); animation-delay: 160ms; }
-.swatch-cream { background: var(--cream); animation-delay: 240ms; }
+.hero-flagmark {
+  display: grid;
+  grid-template-columns: 30px 38px 30px;
+  align-items: center;
+  gap: 10px;
+}
+
+.flag-bar {
+  display: block;
+  width: 30px;
+  height: 44px;
+  background: #ff5757;
+}
+
+.flag-leaf {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #ff5757;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.hero-wordmark-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: clamp(1.4rem, 2.2vw, 2.2rem);
+  line-height: 1.05;
+  font-weight: 500;
+}
 
 .workspace-grid {
   display: grid;
@@ -120,7 +146,7 @@ input {
   justify-content: center;
   min-width: 180px;
   padding: 12px 18px;
-  border: 1px solid rgba(94, 0, 6, 0.16);
+  border: 0.5px solid rgba(94, 0, 6, 0.16);
   border-radius: 999px;
   background: rgba(255, 252, 246, 0.82);
   color: var(--deep-red);
@@ -142,7 +168,7 @@ input {
 
 .card-surface {
   background: rgba(255, 252, 246, 0.9);
-  border: 1px solid var(--line);
+  border: 0.5px solid var(--line);
   border-radius: 26px;
   padding: 22px;
   box-shadow: 0 10px 30px rgba(94, 0, 6, 0.06);
@@ -174,7 +200,7 @@ input {
   width: 100%;
   margin-bottom: 18px;
   padding: 14px 16px;
-  border: 1px solid rgba(94, 0, 6, 0.18);
+  border: 0.5px solid rgba(94, 0, 6, 0.18);
   border-radius: 16px;
   background: #fff;
 }
@@ -186,7 +212,7 @@ select.text-input {
 .upload-zone {
   display: block;
   padding: 22px 20px;
-  border: 2px dashed rgba(155, 15, 6, 0.26);
+  border: 1px dashed rgba(155, 15, 6, 0.26);
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(238, 217, 185, 0.45), rgba(255, 250, 244, 0.82));
   cursor: pointer;
@@ -228,7 +254,7 @@ select.text-input {
   width: 100%;
   margin-top: 14px;
   padding: 13px 16px;
-  border: 1px solid rgba(94, 0, 6, 0.14);
+  border: 0.5px solid rgba(94, 0, 6, 0.14);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.8);
   color: var(--deep-red);
@@ -275,7 +301,7 @@ select.text-input {
   gap: 12px;
   width: 100%;
   padding: 14px 14px;
-  border: 1px solid rgba(94, 0, 6, 0.12);
+  border: 0.5px solid rgba(94, 0, 6, 0.12);
   border-radius: 18px;
   background: white;
   text-align: left;
@@ -347,7 +373,7 @@ select.text-input {
   width: 100%;
   height: 100%;
   min-height: 580px;
-  border: 1px solid rgba(94, 0, 6, 0.12);
+  border: 0.5px solid rgba(94, 0, 6, 0.12);
   border-radius: 20px;
   background: white;
   object-fit: contain;
@@ -358,7 +384,7 @@ select.text-input {
   display: grid;
   place-items: center;
   min-height: 220px;
-  border: 1px dashed rgba(94, 0, 6, 0.16);
+  border: 0.5px dashed rgba(94, 0, 6, 0.16);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.72);
   color: var(--muted);
@@ -400,7 +426,7 @@ select.text-input {
 
 .stage-card {
   padding: 16px;
-  border: 1px solid rgba(94, 0, 6, 0.12);
+  border: 0.5px solid rgba(94, 0, 6, 0.12);
   border-radius: 18px;
   background: white;
   overflow-wrap: anywhere;
@@ -461,7 +487,7 @@ select.text-input {
   min-height: 340px;
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(255, 252, 246, 1), rgba(244, 229, 209, 0.84));
-  border: 1px solid rgba(94, 0, 6, 0.12);
+  border: 0.5px solid rgba(94, 0, 6, 0.12);
 }
 
 .report-box pre {
@@ -481,7 +507,7 @@ select.text-input {
   margin-top: 16px;
   margin-bottom: 18px;
   padding: 16px;
-  border: 1px solid var(--line);
+  border: 0.5px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
@@ -517,7 +543,7 @@ select.text-input {
   padding: 22px;
   border-radius: 28px;
   background: rgba(255, 252, 246, 0.97);
-  border: 1px solid var(--line);
+  border: 0.5px solid var(--line);
   box-shadow: var(--shadow);
   overflow: auto;
 }
@@ -590,6 +616,11 @@ select.text-input {
   .hero-panel {
     grid-template-columns: 1fr;
     padding: 24px;
+  }
+
+  .hero-wordmark-card {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .stage-grid {

@@ -162,18 +162,23 @@ export default function App() {
     <main className="app-shell">
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">AI-Assisted Government Application Verification</p>
-          <h1>Truthy Review Console</h1>
+          <p className="eyebrow">AI-powered Application Completeness Check</p>
+          <h1>Truthy B2G Portal</h1>
           <p className="hero-text">
-            Upload an application package, inspect the file bundle, and send it to the FastAPI
-            review endpoint from a single officer-facing screen.
+            Upload an application, inspect the package, and have it inspected for the
+            R10 Completeness Check in front of an IRCC Officer.
           </p>
         </div>
-        <div className="palette-strip" aria-hidden="true">
-          <span className="swatch swatch-deep" />
-          <span className="swatch swatch-crimson" />
-          <span className="swatch swatch-amber" />
-          <span className="swatch swatch-cream" />
+        <div className="hero-wordmark-card" aria-label="Immigration, Refugees and Citizenship Canada wordmark">
+          <div className="hero-flagmark" aria-hidden="true">
+            <span className="flag-bar" />
+            <span className="flag-leaf">✦</span>
+            <span className="flag-bar" />
+          </div>
+          <div className="hero-wordmark-text">
+            <span>Immigration, Refugees</span>
+            <span>and Citizenship Canada</span>
+          </div>
         </div>
       </section>
 
@@ -226,7 +231,7 @@ export default function App() {
               onClick={handleSubmit}
               type="button"
             >
-              {isLoading ? <LoaderText /> : "Run Review"}
+              {isLoading ? <LoaderText /> : "Check Completeness"}
             </button>
 
             {errorMessage ? <p className="error-text">{errorMessage}</p> : null}

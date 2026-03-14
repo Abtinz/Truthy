@@ -14,8 +14,11 @@ export default function ResultPanel({ isLoading, reviewResult }) {
   return (
     <section className="result-panel card-surface">
       <div className="panel-header">
-        <h2>Review Result</h2>
-        <p>Structured API output, officer summary, and final case status.</p>
+        <h2>Review Completeness</h2>
+        <p>
+          Multilayered completeness check output, status result in each layer, and
+          summaries visible to IRCC Officers.
+        </p>
       </div>
 
       {isLoading ? (

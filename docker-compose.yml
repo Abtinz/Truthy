@@ -14,7 +14,7 @@ services:
       - qdrant
     volumes:
       - ./:/workspace
-    command: ["sh", "-c", "echo 'API placeholder service' && sleep infinity"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   streamlit:
     build:
@@ -28,7 +28,16 @@ services:
       - api
     volumes:
       - ./:/workspace
-    command: ["sh", "-c", "echo 'Streamlit placeholder service' && sleep infinity"]
+    command:
+      [
+        "python",
+        "-m",
+        "streamlit",
+        "run",
+        "app.py",
+        "--server.port=8501",
+        "--server.address=0.0.0.0",
+      ]
 
   indexer:
     build:
@@ -58,7 +67,7 @@ services:
       - qdrant
     volumes:
       - ./:/workspace
-    command: ["sh", "-c", "echo 'Agentic RAG placeholder service' && sleep infinity"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
 
   redis:
     image: redis:7-alpine

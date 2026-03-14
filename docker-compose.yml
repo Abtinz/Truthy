@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./services/api
+    container_name: truthy-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - indexer
+      - agentic-rag
+      - redis
+      - qdrant
+    volumes:
+      - ./:/workspace
+    command: ["sh", "-c", "echo 'API placeholder service' && sleep infinity"]
+
+  streamlit:
+    build:
+      context: ./services/streamlit
+    container_name: truthy-streamlit
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    volumes:
+      - ./:/workspace
+    command: ["sh", "-c", "echo 'Streamlit placeholder service' && sleep infinity"]
+
+  indexer:
+    build:
+      context: ./services/indexer
+    container_name: truthy-indexer
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+      - qdrant
+    volumes:
+      - ./:/workspace
+    command: ["sh", "-c", "echo 'Indexer placeholder service' && sleep infinity"]
+
+  agentic-rag:
+    build:
+      context: ./services/agentic-rag
+    container_name: truthy-agentic-rag
+    env_file:
+      - .env
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis
+      - qdrant
+    volumes:
+      - ./:/workspace
+    command: ["sh", "-c", "echo 'Agentic RAG placeholder service' && sleep infinity"]
+
+  redis:
+    image: redis:7-alpine
+    container_name: truthy-redis
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: truthy-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+
+networks:
+  default:
+    name: truthy-network

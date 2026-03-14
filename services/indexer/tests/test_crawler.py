@@ -143,3 +143,39 @@ def test_render_sections_to_text_prints_hierarchical_output() -> None:
 
     assert "# Visitor guide" in text
     assert "## Visitor guide > Documents" in text
+
+
+def test_extract_modified_date_reads_ircc_style_date() -> None:
+    """Verify the crawler extracts the `Date modified` value from HTML.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+
+    crawler = VisitorProgramCrawler(sources=[])
+    soup = BeautifulSoup(
+        """
+        <html>
+          <body>
+            <main>
+              <h1>Visitor document requirements</h1>
+            </main>
+            <section>
+              <dt>Date modified:</dt>
+              <dd><time datetime="2026-03-03">2026-03-03</time></dd>
+            </section>
+          </body>
+        </html>
+        """,
+        "html.parser",
+    )
+
+    modified_date = crawler._extract_modified_date(soup)
+
+    print("\n=== EXTRACTED MODIFIED DATE ===")
+    print(modified_date)
+
+    assert modified_date == "2026-03-03"

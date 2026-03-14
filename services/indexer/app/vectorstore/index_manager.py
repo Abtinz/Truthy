@@ -5,6 +5,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+from app.cache.policy_freshness_cache import PolicyFreshnessCache
 from app.chunking.text_chunker import ChunkingConfig, TextChunker
 from app.core.config import IndexerSettings
 from app.embeddings.embedder import embed_texts
@@ -64,6 +65,7 @@ class VisitorProgramIndexer:
         crawler: Optional crawler override for tests or custom runs.
         pinecone_client: Optional Pinecone client override for tests.
         chunker: Optional text chunker override for tests.
+        policy_cache: Optional Redis freshness cache override for tests.
 
     Returns:
         VisitorProgramIndexer: Configured indexing workflow manager.
@@ -76,6 +78,7 @@ class VisitorProgramIndexer:
         crawler: VisitorProgramCrawler | None = None,
         pinecone_client: PineconeIndexerClient | None = None,
         chunker: TextChunker | None = None,
+        policy_cache: PolicyFreshnessCache | None = None,
     ) -> None:
         """Initialize the indexer manager.
 
@@ -84,6 +87,7 @@ class VisitorProgramIndexer:
             crawler: Optional crawler override.
             pinecone_client: Optional Pinecone client override.
             chunker: Optional text chunker override.
+            policy_cache: Optional freshness cache override.
 
         Returns:
             None.
@@ -94,6 +98,7 @@ class VisitorProgramIndexer:
         self.chunker = chunker or TextChunker(
             ChunkingConfig(chunk_size=1200, chunk_overlap=150)
         )
+        self.policy_cache = policy_cache or PolicyFreshnessCache(settings)
 
     def index_all_sources(self) -> IndexingSummary:
         """Index the visitor-program sources into the two Pinecone indexes.
@@ -162,6 +167,12 @@ class VisitorProgramIndexer:
             self.pinecone_client.upsert_operational_guidelines(
                 records_by_index["operational_guidelines"],
             )
+            for document in documents:
+                if document.source.url and document.modified_date:
+                    self.policy_cache.store_modified_date(
+                        document.source.url,
+                        document.modified_date,
+                    )
             print("upsert_guidelines_done", flush=True)
 
         if records_by_index["document_checklist_pdf"]:
@@ -319,11 +330,44 @@ class VisitorProgramIndexer:
             list[CrawledDocument]: Crawled guideline documents ready for the
             section-based indexing path.
         """
-        return [
-            self.crawler.crawl_source(source)
-            for source in self.crawler.sources
-            if source.kind == "operational_guidelines"
-        ]
+        documents: list[CrawledDocument] = []
+
+        for source in self.crawler.sources:
+            if source.kind != "operational_guidelines":
+                continue
+
+            modified_date = self.crawler.fetch_source_modified_date(source)
+            if modified_date:
+                freshness_result = self.policy_cache.compare_modified_date(
+                    source.url,
+                    modified_date,
+                )
+                print(
+                    "policy_freshness_check "
+                    f"url={source.url} modified_date={modified_date} "
+                    f"cached_modified_date={freshness_result.cached_modified_date} "
+                    f"has_changed={freshness_result.has_changed}",
+                    flush=True,
+                )
+                if not freshness_result.has_changed:
+                    print(
+                        f"policy_source_skipped url={source.url} modified_date={modified_date}",
+                        flush=True,
+                    )
+                    continue
+
+            document = self.crawler.crawl_source(source)
+            if modified_date and document.modified_date is None:
+                document = CrawledDocument(
+                    source=document.source,
+                    document_title=document.document_title,
+                    sections=document.sections,
+                    full_text=document.full_text,
+                    modified_date=modified_date,
+                )
+            documents.append(document)
+
+        return documents
 
     def _get_document_checklist_source(self) -> CrawlerSource | None:
         """Return the configured checklist source used for direct PDF indexing.

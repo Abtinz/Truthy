@@ -27,6 +27,9 @@ class IndexerSettings:
         pinecone_region: Serverless deployment region for Pinecone indexes.
         pinecone_deletion_protection: Pinecone deletion protection mode for
             created indexes.
+        redis_url: Redis connection string used for policy freshness caching.
+        redis_policy_cache_prefix: Redis key prefix used for cached policy
+            freshness entries.
 
     Returns:
         IndexerSettings: Immutable runtime configuration for the indexer.
@@ -42,6 +45,8 @@ class IndexerSettings:
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
     pinecone_deletion_protection: str = "disabled"
+    redis_url: str = "redis://redis:6379/0"
+    redis_policy_cache_prefix: str = "truthy:policy-modified"
 
     @classmethod
     def from_env(cls) -> "IndexerSettings":
@@ -76,6 +81,11 @@ class IndexerSettings:
             os.getenv("PINECONE_DELETION_PROTECTION", "disabled").strip()
             or "disabled"
         )
+        redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0").strip() or "redis://redis:6379/0"
+        redis_policy_cache_prefix = (
+            os.getenv("REDIS_POLICY_CACHE_PREFIX", "truthy:policy-modified").strip()
+            or "truthy:policy-modified"
+        )
 
         missing_variables = [
             name
@@ -107,4 +117,6 @@ class IndexerSettings:
             pinecone_cloud=pinecone_cloud,
             pinecone_region=pinecone_region,
             pinecone_deletion_protection=pinecone_deletion_protection,
+            redis_url=redis_url,
+            redis_policy_cache_prefix=redis_policy_cache_prefix,
         )

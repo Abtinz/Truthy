@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.cache.policy_freshness_cache import PolicyFreshnessResult
 from app.chunking.text_chunker import ChunkingConfig, TextChunker
 from app.core.config import IndexerSettings
 from app.ingestion.crawler import CrawledDocument, CrawlerSource, HierarchicalSection
@@ -67,6 +68,7 @@ class FakeCrawler:
                     )
                 ],
                 full_text="Guidelines full text",
+                modified_date="2026-03-03",
             ),
         ]
 
@@ -80,6 +82,20 @@ class FakeCrawler:
             CrawledDocument: Fixed guideline document for the requested source.
         """
         return self.crawl_all()[0]
+
+    def fetch_source_modified_date(self, source: CrawlerSource) -> str | None:
+        """Return a deterministic modified date for guideline sources.
+
+        Args:
+            source: Source requested by the index manager.
+
+        Returns:
+            str | None: Fixed modified date string for guideline sources.
+        """
+
+        if source.kind == "operational_guidelines":
+            return "2026-03-03"
+        return None
 
 
 class FakePineconeClient:
@@ -151,6 +167,66 @@ class FakePineconeClient:
         return {"upserted_count": len(records)}
 
 
+class FakePolicyCache:
+    """Fake freshness cache used by index-manager tests.
+
+    Args:
+        has_changed_by_url: Optional per-URL freshness decisions.
+
+    Returns:
+        FakePolicyCache: Test double for the Redis freshness cache.
+    """
+
+    def __init__(self, has_changed_by_url: dict[str, bool] | None = None) -> None:
+        """Initialize the fake freshness cache.
+
+        Args:
+            has_changed_by_url: Optional per-URL freshness decisions.
+
+        Returns:
+            None.
+        """
+
+        self.has_changed_by_url = has_changed_by_url or {}
+        self.stored_dates: list[tuple[str, str]] = []
+
+    def compare_modified_date(
+        self,
+        source_url: str,
+        modified_date: str,
+    ) -> PolicyFreshnessResult:
+        """Return the configured freshness decision for one source URL.
+
+        Args:
+            source_url: Policy source URL.
+            modified_date: Current page-level modified date.
+
+        Returns:
+            PolicyFreshnessResult: Fake freshness comparison result.
+        """
+
+        has_changed = self.has_changed_by_url.get(source_url, True)
+        return PolicyFreshnessResult(
+            source_url=source_url,
+            modified_date=modified_date,
+            cached_modified_date=None if has_changed else modified_date,
+            has_changed=has_changed,
+        )
+
+    def store_modified_date(self, source_url: str, modified_date: str) -> None:
+        """Capture persisted modified dates for assertions.
+
+        Args:
+            source_url: Policy source URL.
+            modified_date: Current page-level modified date.
+
+        Returns:
+            None.
+        """
+
+        self.stored_dates.append((source_url, modified_date))
+
+
 def test_index_manager_builds_and_routes_records(monkeypatch) -> None:
     """Verify the index manager chunks, embeds, and routes records correctly.
 
@@ -161,6 +237,7 @@ def test_index_manager_builds_and_routes_records(monkeypatch) -> None:
         None.
     """
     fake_pinecone = FakePineconeClient()
+    fake_policy_cache = FakePolicyCache()
     settings = _build_settings()
 
     monkeypatch.setattr(
@@ -196,6 +273,7 @@ def test_index_manager_builds_and_routes_records(monkeypatch) -> None:
         crawler=FakeCrawler(),
         pinecone_client=fake_pinecone,
         chunker=TextChunker(ChunkingConfig(chunk_size=80, chunk_overlap=10)),
+        policy_cache=fake_policy_cache,
     )
 
     summary = indexer.index_all_sources()
@@ -216,6 +294,79 @@ def test_index_manager_builds_and_routes_records(monkeypatch) -> None:
         fake_pinecone.checklist_records[0].metadata["source_reference"]
         == "/workspace/services/data/forms/imm5484e.pdf"
     )
+    assert fake_policy_cache.stored_dates == [
+        ("https://example.com/guidelines", "2026-03-03")
+    ]
+
+
+def test_index_manager_skips_unchanged_operational_guidelines(monkeypatch) -> None:
+    """Verify unchanged IRCC pages are skipped before embedding.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+
+    Returns:
+        None.
+    """
+
+    fake_pinecone = FakePineconeClient()
+    fake_policy_cache = FakePolicyCache(
+        has_changed_by_url={"https://example.com/guidelines": False}
+    )
+    settings = _build_settings()
+
+    monkeypatch.setattr(
+        "app.vectorstore.index_manager.embed_texts",
+        lambda texts: [[float(index + 1), float(len(text))] for index, text in enumerate(texts)],
+    )
+    monkeypatch.setattr(
+        "app.vectorstore.index_manager.extract_pdf_to_text_chunks",
+        lambda pdf_bytes, **kwargs: ExtractedPdf(
+            full_text="Passport copy and fee receipt.",
+            chunks=[
+                TextChunk(
+                    chunk_id="p1-page_text-1",
+                    page_number=1,
+                    source_type="page_text",
+                    text="Passport copy and fee receipt.",
+                    char_count=30,
+                    metadata={"page_number": 1, "method": "pymupdf_text"},
+                )
+            ],
+            pages=[
+                {
+                    "page_number": 1,
+                    "text": "Passport copy and fee receipt.",
+                    "entries": [],
+                }
+            ],
+        ),
+    )
+
+    indexer = VisitorProgramIndexer(
+        settings,
+        crawler=FakeCrawler(),
+        pinecone_client=fake_pinecone,
+        chunker=TextChunker(ChunkingConfig(chunk_size=80, chunk_overlap=10)),
+        policy_cache=fake_policy_cache,
+    )
+
+    summary = indexer.index_all_sources()
+
+    print("\n=== SKIPPED GUIDELINE SUMMARY ===")
+    print(summary.to_dict())
+    print("\n=== SKIPPED GUIDELINE RECORD COUNTS ===")
+    print(
+        {
+            "guideline_records": len(fake_pinecone.guideline_records),
+            "checklist_records": len(fake_pinecone.checklist_records),
+        }
+    )
+
+    assert summary.crawled_documents == 1
+    assert len(fake_pinecone.guideline_records) == 0
+    assert len(fake_pinecone.checklist_records) == 1
+    assert fake_policy_cache.stored_dates == []
 
 
 def _build_settings() -> IndexerSettings:
@@ -238,4 +389,6 @@ def _build_settings() -> IndexerSettings:
         pinecone_cloud="aws",
         pinecone_region="us-east-1",
         pinecone_deletion_protection="disabled",
+        redis_url="redis://redis:6379/0",
+        redis_policy_cache_prefix="truthy:test-policy-modified",
     )

@@ -39,6 +39,23 @@ services:
         "--server.address=0.0.0.0",
       ]
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: truthy-frontend
+    env_file:
+      - .env
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./:/workspace
+      - /workspace/frontend/node_modules
+    command: ["npm", "run", "dev"]
+
   indexer:
     build:
       context: ./services/indexer

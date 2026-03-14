@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -91,6 +92,8 @@ class CrawledDocument:
         sections: Hierarchical sections extracted from the source.
         full_text: Text rendition of the hierarchical structure for inspection
             or downstream indexing.
+        modified_date: Optional page-level `Date modified` value for HTML
+            sources.
 
     Returns:
         CrawledDocument: Immutable crawled document record.
@@ -100,6 +103,7 @@ class CrawledDocument:
     document_title: str
     sections: list[HierarchicalSection]
     full_text: str
+    modified_date: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         """Convert the crawled document to a serializable dictionary.
@@ -115,6 +119,7 @@ class CrawledDocument:
             "document_title": self.document_title,
             "sections": [section.to_dict() for section in self.sections],
             "full_text": self.full_text,
+            "modified_date": self.modified_date,
         }
 
 
@@ -201,6 +206,23 @@ class VisitorProgramCrawler:
             return self._crawl_pdf_source(source)
         return self._crawl_html_source(source)
 
+    def fetch_source_modified_date(self, source: CrawlerSource) -> str | None:
+        """Fetch the `Date modified` value for one operational-guidelines page.
+
+        Args:
+            source: Crawl target definition.
+
+        Returns:
+            str | None: Extracted date in `YYYY-MM-DD` format when found.
+        """
+
+        if source.kind != "operational_guidelines" or not source.url:
+            return None
+
+        loader = self._build_web_loader(source.url)
+        soup = self._load_soup_from_loader(loader)
+        return self._extract_modified_date(soup)
+
     def _crawl_html_source(self, source: CrawlerSource) -> CrawledDocument:
         """Fetch and parse one HTML source with LangChain's web loader.
 
@@ -213,6 +235,7 @@ class VisitorProgramCrawler:
         loader = self._build_web_loader(source.url)
         soup = self._load_soup_from_loader(loader)
         document_title = self._extract_document_title(soup, source.title)
+        modified_date = self._extract_modified_date(soup)
         sections = self._extract_html_sections(soup, document_title)
         full_text = self._render_sections_to_text(sections)
 
@@ -221,6 +244,7 @@ class VisitorProgramCrawler:
             document_title=document_title,
             sections=sections,
             full_text=full_text,
+            modified_date=modified_date,
         )
 
     def _crawl_pdf_source(self, source: CrawlerSource) -> CrawledDocument:
@@ -256,6 +280,7 @@ class VisitorProgramCrawler:
             document_title=source.title,
             sections=sections,
             full_text=full_text,
+            modified_date=None,
         )
 
     def _build_web_loader(self, url: str) -> WebBaseLoader:
@@ -308,6 +333,39 @@ class VisitorProgramCrawler:
                 return text
 
         return fallback_title
+
+    def _extract_modified_date(self, soup: BeautifulSoup) -> str | None:
+        """Extract the IRCC `Date modified` value from the page.
+
+        Args:
+            soup: Parsed HTML document.
+
+        Returns:
+            str | None: Extracted date in `YYYY-MM-DD` format when available.
+        """
+
+        time_tag = soup.find("time")
+        if time_tag is not None:
+            datetime_value = normalize_text(time_tag.get("datetime", ""))
+            datetime_match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", datetime_value)
+            if datetime_match:
+                return datetime_match.group(0)
+
+            time_text = normalize_text(time_tag.get_text(" ", strip=True))
+            time_match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", time_text)
+            if time_match:
+                return time_match.group(0)
+
+        full_text = normalize_text(soup.get_text(" ", strip=True))
+        text_match = re.search(
+            r"Date modified:\s*(\d{4}-\d{2}-\d{2})",
+            full_text,
+            flags=re.IGNORECASE,
+        )
+        if text_match:
+            return text_match.group(1)
+
+        return None
 
     def _extract_html_sections(
         self,

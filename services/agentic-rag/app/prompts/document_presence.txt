@@ -1,0 +1,22 @@
+System Prompt:
+{system_prompt}
+
+Stage:
+Document Presence
+
+Instruction:
+Determine whether the uploaded package includes all required document
+categories for the application under review.
+
+Application Name:
+{application_name}
+
+Uploaded Files:
+{uploaded_files}
+
+Expected Rule:
+All documents have been submitted.
+
+Output Requirement:
+Return a strict officer-facing finding that identifies missing document
+categories, the affected files if any, and the precise reason for the result.

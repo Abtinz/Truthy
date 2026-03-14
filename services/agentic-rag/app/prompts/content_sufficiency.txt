@@ -1,0 +1,26 @@
+System Prompt:
+{system_prompt}
+
+Stage:
+Content Sufficiency
+
+Instruction:
+Determine whether the submitted content is consistent with a complete
+application package and identify explicit completeness deficiencies.
+
+Application Name:
+{application_name}
+
+Retrieved Context:
+{retrieved_context}
+
+Extracted Evidence:
+{extracted_evidence}
+
+Expected Rules:
+Proof of payment has been submitted.
+All documents have been submitted.
+
+Output Requirement:
+Return a strict officer-facing finding that identifies the exact file,
+the specific deficiency, and the matched text excerpt supporting the result.

@@ -47,6 +47,17 @@ The repository includes a `docker-compose.yml` file with the following services:
 
 `redis` and `qdrant` are included as foundational infrastructure for caching and retrieval-oriented indexing.
 
+## Indexer Novelty
+
+The indexer now includes a Redis-backed IRCC freshness cache.
+
+- For each operational-guidelines source URL, the crawler extracts only the page's `Date modified` value.
+- Redis stores the source link identity and the last observed modified date.
+- Before indexing, the indexer compares the current modified date against Redis.
+- If the date has not changed, the source is skipped before chunking, embedding, and Pinecone upsert.
+
+This reduces unnecessary embedding calls and makes policy-refresh runs cheaper when IRCC pages are unchanged.
+
 ## Local Run Instructions
 
 1. Copy environment variables:

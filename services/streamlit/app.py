@@ -8,6 +8,7 @@ import streamlit as st
 
 from utils import build_review_payload
 from utils import collect_backend_logs
+from utils import compute_overall_result
 from utils import format_review_response
 
 
@@ -106,6 +107,14 @@ def main() -> None:
     with right_column:
         st.subheader("Results")
         if st.session_state.review_result:
+            overall_result = compute_overall_result(st.session_state.review_result)
+            if overall_result == "PASS":
+                st.success("Overall Result: PASS")
+            elif overall_result == "FAIL":
+                st.error("Overall Result: FAIL")
+            else:
+                st.warning("Overall Result: MANUAL REVIEW")
+
             st.text_area(
                 "Formatted Report",
                 value=format_review_response(st.session_state.review_result),

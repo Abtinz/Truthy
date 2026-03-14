@@ -2,4 +2,4 @@ loaded_settings
 study_permit_crawler_initialized
 study_permit_indexer_initialized
 === STUDY PERMIT INDEXING SUMMARY ===
-{'crawled_documents': 1, 'generated_chunks': 5, 'operational_guidelines_upserts': 0, 'document_checklist_upserts': 5}
+{'crawled_documents': 2, 'generated_chunks': 29, 'operational_guidelines_upserts': 24, 'document_checklist_upserts': 5}

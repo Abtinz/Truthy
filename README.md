@@ -73,8 +73,8 @@ The current program coverage includes:
   - 2 operational-guidelines pages
   - 1 local checklist PDF
 - `study permit`
+  - 1 operational-guidelines page for study permit application assessment
   - 1 local checklist PDF at [IMM5483.pdf](/Users/abtinzandi/Desktop/Truthy/services/data/forms/IMM5483.pdf)
-  - no operational-guidelines pages configured at this stage
 
 ## Local Run Instructions
 

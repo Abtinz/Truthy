@@ -125,9 +125,15 @@ def test_program_source_builders_match_visitor_and_study_permit_scope() -> None:
 
     assert len(visitor_sources) == 3
     assert sum(source.kind == "operational_guidelines" for source in visitor_sources) == 2
-    assert len(study_permit_sources) == 1
-    assert study_permit_sources[0].kind == "document_checklist_pdf"
-    assert study_permit_sources[0].file_path.endswith("IMM5483.pdf")
+    assert len(study_permit_sources) == 2
+    assert (
+        sum(source.kind == "operational_guidelines" for source in study_permit_sources)
+        == 1
+    )
+    assert study_permit_sources[0].kind == "operational_guidelines"
+    assert "study-permits/assessing-application.html#s1" in study_permit_sources[0].url
+    assert study_permit_sources[1].kind == "document_checklist_pdf"
+    assert study_permit_sources[1].file_path.endswith("IMM5483.pdf")
 
 
 def test_render_sections_to_text_prints_hierarchical_output() -> None:
@@ -206,3 +212,38 @@ def test_extract_modified_date_reads_ircc_style_date() -> None:
     print(modified_date)
 
     assert modified_date == "2026-03-03"
+
+
+def test_extract_modified_date_reads_dcterms_modified_meta() -> None:
+    """Verify the crawler extracts the `dcterms.modified` meta value.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+
+    crawler = VisitorProgramCrawler(sources=[])
+    soup = BeautifulSoup(
+        """
+        <html>
+          <head>
+            <meta name="dcterms.modified" content="2025-11-25" />
+          </head>
+          <body>
+            <main>
+              <h1>Study permits: Assessing the application</h1>
+            </main>
+          </body>
+        </html>
+        """,
+        "html.parser",
+    )
+
+    modified_date = crawler._extract_modified_date(soup)
+
+    print("\n=== EXTRACTED META MODIFIED DATE ===")
+    print(modified_date)
+
+    assert modified_date == "2025-11-25"

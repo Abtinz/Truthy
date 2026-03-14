@@ -18,7 +18,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   color: var(--ink);
   background:
     radial-gradient(circle at top left, rgba(213, 62, 15, 0.14), transparent 22%),
@@ -60,9 +60,9 @@ input {
 
 .hero-copy h1 {
   margin: 0;
-  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(2.2rem, 4vw, 4rem);
-  line-height: 0.96;
+  line-height: 1;
+  font-weight: 700;
 }
 
 .hero-text {
@@ -100,6 +100,46 @@ input {
   margin-top: 24px;
 }
 
+.indexer-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.page-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.page-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  padding: 12px 18px;
+  border: 1px solid rgba(94, 0, 6, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 252, 246, 0.82);
+  color: var(--deep-red);
+  text-decoration: none;
+  font-weight: 700;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.page-nav-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(155, 15, 6, 0.34);
+}
+
+.page-nav-link-active {
+  background: linear-gradient(135deg, rgba(238, 217, 185, 0.92), rgba(255, 252, 246, 0.92));
+  border-color: rgba(155, 15, 6, 0.42);
+  box-shadow: 0 10px 24px rgba(94, 0, 6, 0.08);
+}
+
 .card-surface {
   background: rgba(255, 252, 246, 0.9);
   border: 1px solid var(--line);
@@ -112,8 +152,8 @@ input {
 .panel-header h2,
 .file-column h2 {
   margin: 0;
-  font-family: "Fraunces", Georgia, serif;
   font-size: 1.4rem;
+  font-weight: 700;
 }
 
 .panel-header p,
@@ -137,6 +177,10 @@ input {
   border: 1px solid rgba(94, 0, 6, 0.18);
   border-radius: 16px;
   background: #fff;
+}
+
+select.text-input {
+  appearance: none;
 }
 
 .upload-zone {
@@ -364,8 +408,8 @@ input {
 
 .stage-card h3 {
   margin: 10px 0 8px;
-  font-family: "Fraunces", Georgia, serif;
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .stage-card p {
@@ -424,9 +468,22 @@ input {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 0.92rem;
   line-height: 1.75;
+  color: var(--ink);
+}
+
+.index-result-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin-top: 16px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
 }
 
@@ -475,8 +532,8 @@ input {
 
 .preview-modal-header h2 {
   margin: 0;
-  font-family: "Fraunces", Georgia, serif;
   font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .preview-modal-header p {
@@ -515,7 +572,8 @@ input {
 }
 
 @media (max-width: 1180px) {
-  .workspace-grid {
+  .workspace-grid,
+  .indexer-grid {
     grid-template-columns: 1fr;
   }
 

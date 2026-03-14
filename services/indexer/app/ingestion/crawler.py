@@ -168,19 +168,27 @@ def build_visitor_program_sources() -> list[CrawlerSource]:
 def build_study_permit_sources() -> list[CrawlerSource]:
     """Build the source list for the study-permit program.
 
-    The current study-permit indexing scope includes only the local checklist
-    PDF. No operational-guidelines pages are configured for this program at
-    this stage.
+    The current study-permit indexing scope includes one operational-guidelines
+    page and the local checklist PDF.
 
     Args:
         None.
 
     Returns:
-        list[CrawlerSource]: Study-permit sources containing only the checklist
-        PDF.
+        list[CrawlerSource]: Study-permit sources containing the operational
+        guidelines page and the checklist PDF.
     """
 
     return [
+        CrawlerSource(
+            url=(
+                "https://www.canada.ca/en/immigration-refugees-citizenship/"
+                "corporate/publications-manuals/operational-bulletins-manuals/"
+                "temporary-residents/study-permits/assessing-application.html#s1"
+            ),
+            kind="operational_guidelines",
+            title="Study permit application assessment",
+        ),
         CrawlerSource(
             kind="document_checklist_pdf",
             title="Study permit document checklist PDF",
@@ -385,6 +393,15 @@ class VisitorProgramCrawler:
         Returns:
             str | None: Extracted date in `YYYY-MM-DD` format when available.
         """
+        meta_modified = soup.find(
+            "meta",
+            attrs={"name": re.compile(r"^dcterms\.modified$", re.IGNORECASE)},
+        )
+        if meta_modified is not None:
+            meta_content = normalize_text(meta_modified.get("content", ""))
+            meta_match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", meta_content)
+            if meta_match:
+                return meta_match.group(0)
 
         time_tag = soup.find("time")
         if time_tag is not None:

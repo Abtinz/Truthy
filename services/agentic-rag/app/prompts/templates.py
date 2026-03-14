@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from langchain_core.prompts import PromptTemplate
+
 
 PROMPTS_DIRECTORY = Path(__file__).resolve().parent
 
@@ -76,7 +78,9 @@ def render_document_presence_prompt(
     """
 
     uploaded_file_block = "\n".join(f"- {file_name}" for file_name in uploaded_files) or "- none"
-    return prompt_bundle.document_presence_template.format(
+    return PromptTemplate.from_template(
+        prompt_bundle.document_presence_template
+    ).format(
         system_prompt=prompt_bundle.system_prompt,
         application_name=application_name,
         uploaded_files=uploaded_file_block,
@@ -101,7 +105,9 @@ def render_form_completion_prompt(
     """
 
     form_evidence_block = "\n".join(f"- {line}" for line in form_evidence) or "- none"
-    return prompt_bundle.form_completion_template.format(
+    return PromptTemplate.from_template(
+        prompt_bundle.form_completion_template
+    ).format(
         system_prompt=prompt_bundle.system_prompt,
         application_name=application_name,
         form_evidence=form_evidence_block,
@@ -129,7 +135,9 @@ def render_content_sufficiency_prompt(
 
     retrieved_context_block = "\n".join(f"- {line}" for line in retrieved_context) or "- none"
     extracted_evidence_block = "\n".join(f"- {line}" for line in extracted_evidence) or "- none"
-    return prompt_bundle.content_sufficiency_template.format(
+    return PromptTemplate.from_template(
+        prompt_bundle.content_sufficiency_template
+    ).format(
         system_prompt=prompt_bundle.system_prompt,
         application_name=application_name,
         retrieved_context=retrieved_context_block,

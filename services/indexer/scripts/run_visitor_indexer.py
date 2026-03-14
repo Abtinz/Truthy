@@ -5,7 +5,7 @@ from pathlib import Path
 from app.core.config import IndexerSettings
 from app.vectorstore.index_manager import VisitorProgramIndexer
 
-LOG_PATH = Path("/workspace/services/indexer/indexer_run.log")
+LOG_PATH = Path("/workspace/services/indexer/log/indexer_run.log")
 
 
 def log(message: str) -> None:

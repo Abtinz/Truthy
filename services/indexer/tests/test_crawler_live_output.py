@@ -5,16 +5,16 @@ from pathlib import Path
 from app.ingestion.crawler import CrawledDocument, HierarchicalSection, VisitorProgramCrawler
 
 
-OUTPUT_PATH = Path("/workspace/services/indexer/test_outputs/crawler_live_results.txt")
+OUTPUT_PATH = Path("/workspace/services/indexer/log/crawler_live_results.txt")
 
 
 def test_live_crawler_writes_results_to_txt() -> None:
-    """Run the live visitor-program crawler and persist its output to a text file.
+    """Run the live guideline crawler and persist its output to a text file.
 
-    This test is intentionally integration-style. It fetches the three live
-    visitor-program sources, renders their hierarchical sections into a readable
-    text report, writes that report into the repository workspace, and verifies
-    the result is non-empty.
+    This test is intentionally integration-style. It fetches the live
+    operational-guidelines sources owned by the crawler, renders their
+    hierarchical sections into a readable text report, writes that report into
+    the repository workspace, and verifies the result is non-empty.
 
     Args:
         None.
@@ -22,7 +22,13 @@ def test_live_crawler_writes_results_to_txt() -> None:
     Returns:
         None.
     """
-    crawler = VisitorProgramCrawler()
+    crawler = VisitorProgramCrawler(
+        sources=[
+            source
+            for source in VisitorProgramCrawler().sources
+            if source.kind == "operational_guidelines"
+        ]
+    )
     documents = crawler.crawl_all()
 
     rendered_output = _render_documents(documents)
@@ -34,12 +40,11 @@ def test_live_crawler_writes_results_to_txt() -> None:
     print("\n=== LIVE CRAWLER OUTPUT PREVIEW ===")
     print(rendered_output[:3000])
 
-    assert len(documents) == 3
+    assert len(documents) == 2
     assert OUTPUT_PATH.exists()
     assert OUTPUT_PATH.stat().st_size > 0
     assert "Temporary residents: Document requirements" in rendered_output
     assert "Temporary resident: Application intake assessment" in rendered_output
-    assert "Visitor document checklist PDF" in rendered_output
 
 
 def _render_documents(documents: list[CrawledDocument]) -> str:

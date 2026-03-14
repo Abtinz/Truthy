@@ -1,7 +1,7 @@
 
 
 DOCUMENT 1
-Source Reference: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/document-requirements.html
+Source URL: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/document-requirements.html
 Source Kind: operational_guidelines
 Document Title: Temporary residents: Document requirements
 Section Count: 6
@@ -89,7 +89,7 @@ Temporary residents in Canada who submit an application to extend their stay mus
 ================================================================================
 
 DOCUMENT 2
-Source Reference: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/application-intake-assessment.html
+Source URL: https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/operational-bulletins-manuals/temporary-residents/visitors/application-intake-assessment.html
 Source Kind: operational_guidelines
 Document Title: Temporary resident: Application intake assessment
 Section Count: 2
@@ -118,24 +118,4 @@ Before returning a passport to a person who does not require a temporary residen
 - Determine whether biometric information is required or has already been provided and whether the biometric fee has been paid.
 - Determine if additional security checks are required.
 See also: Eligibility and admissibility considerations
-----------------------------------------
-
-================================================================================
-
-DOCUMENT 3
-Source Reference: /workspace/services/data/forms/imm5484e.pdf
-Source Kind: document_checklist_pdf
-Document Title: Visitor document checklist PDF
-Section Count: 1
-
-Section Title: Page 1
-Section Level: 2
-Section Path: Visitor document checklist PDF > Page 1
-Section Content:
-The document you are trying to load requires Adobe Reader 8 or higher. You may not have the 
-Adobe Reader installed or your viewing environment may not be properly configured to use 
-Adobe Reader. 
- 
-For information on how to install Adobe Reader and configure your viewing environment please 
-see http://www.adobe.com/go/pdf_forms_configure.
 ----------------------------------------

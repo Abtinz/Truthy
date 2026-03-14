@@ -1,4 +1,0 @@
-loaded_settings
-indexer_initialized
-=== INDEXING SUMMARY ===
-{'crawled_documents': 3, 'generated_chunks': 13, 'operational_guidelines_upserts': 12, 'document_checklist_upserts': 1}

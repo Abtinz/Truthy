@@ -95,7 +95,7 @@ input {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: 320px minmax(320px, 1fr) minmax(320px, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 22px;
   margin-top: 24px;
 }
@@ -180,6 +180,23 @@ input {
   transition: transform 180ms ease, opacity 180ms ease;
 }
 
+.secondary-button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  border: 1px solid rgba(94, 0, 6, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--deep-red);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .submit-button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
@@ -262,7 +279,6 @@ input {
   color: var(--muted);
 }
 
-.preview-panel,
 .result-panel {
   min-height: 700px;
 }
@@ -333,8 +349,8 @@ input {
 }
 
 .stage-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -343,6 +359,7 @@ input {
   border: 1px solid rgba(94, 0, 6, 0.12);
   border-radius: 18px;
   background: white;
+  overflow-wrap: anywhere;
 }
 
 .stage-card h3 {
@@ -426,6 +443,57 @@ input {
   animation: shimmer 1.3s linear infinite;
 }
 
+.preview-modal-shell {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  background: rgba(36, 19, 17, 0.46);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+}
+
+.preview-modal {
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 60px);
+  padding: 22px;
+  border-radius: 28px;
+  background: rgba(255, 252, 246, 0.97);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  overflow: auto;
+}
+
+.preview-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.preview-modal-header h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.5rem;
+}
+
+.preview-modal-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.preview-close-button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 14px;
+  background: var(--deep-red);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @keyframes shimmer {
   from {
     background-position: 200% 0;
@@ -451,7 +519,6 @@ input {
     grid-template-columns: 1fr;
   }
 
-  .preview-panel,
   .result-panel {
     min-height: auto;
   }
@@ -474,5 +541,9 @@ input {
   .document-preview,
   .image-preview {
     min-height: 360px;
+  }
+
+  .preview-modal-shell {
+    padding: 16px;
   }
 }

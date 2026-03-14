@@ -22,6 +22,7 @@ export default function App() {
   const [reviewResult, setReviewResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const objectUrlMap = useMemo(() => createObjectUrlMap(selectedFiles), [selectedFiles]);
 
@@ -70,6 +71,26 @@ export default function App() {
   }
 
   const selectedPreviewFile = selectedFiles.find((entry) => entry.id === selectedFileId) ?? null;
+
+  /**
+   * Open the preview modal for the currently selected file.
+   *
+   * @returns {void}
+   */
+  function openPreviewModal() {
+    if (selectedPreviewFile) {
+      setIsPreviewOpen(true);
+    }
+  }
+
+  /**
+   * Close the preview modal.
+   *
+   * @returns {void}
+   */
+  function closePreviewModal() {
+    setIsPreviewOpen(false);
+  }
 
   return (
     <main className="app-shell">
@@ -132,15 +153,32 @@ export default function App() {
             files={selectedFiles}
             selectedFileId={selectedFileId}
             onSelectFile={setSelectedFileId}
+            onOpenPreview={openPreviewModal}
           />
         </aside>
 
-        <section className="preview-panel card-surface">
-          <div className="panel-header">
-            <h2>File Preview</h2>
-            <p>Select an uploaded file to inspect it before review.</p>
-          </div>
-          {selectedPreviewFile ? (
+        <ResultPanel isLoading={isLoading} reviewResult={reviewResult} />
+      </section>
+
+      {isPreviewOpen && selectedPreviewFile ? (
+        <div className="preview-modal-shell" onClick={closePreviewModal} role="presentation">
+          <section
+            className="preview-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="File preview"
+          >
+            <div className="preview-modal-header">
+              <div>
+                <h2>File Preview</h2>
+                <p>{selectedPreviewFile.file.name}</p>
+              </div>
+              <button className="preview-close-button" onClick={closePreviewModal} type="button">
+                Close
+              </button>
+            </div>
+
             <div className="preview-frame">
               <div className="preview-meta">
                 <span>{selectedPreviewFile.file.name}</span>
@@ -164,13 +202,9 @@ export default function App() {
                 </div>
               )}
             </div>
-          ) : (
-            <div className="empty-preview">No file selected yet.</div>
-          )}
-        </section>
-
-        <ResultPanel isLoading={isLoading} reviewResult={reviewResult} />
-      </section>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
